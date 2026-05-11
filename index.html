@@ -742,24 +742,206 @@ function doLogout(){
 }
 if(checkAuth()){document.getElementById('loginScreen').style.display='none';document.getElementById('adminDashboard').style.display='block';}
 
-// DATA LAYER
-const STORAGE_KEY='bookings';
-let bookings=[];
-function saveToStorage(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(bookings));}catch(e){console.error('saveToStorage:',e);}}
-function loadFromStorage(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY),stored=raw?JSON.parse(raw):[];
-    bookings.length=0; stored.forEach(b=>bookings.push(b));
-    console.log('admin loaded bookings:',bookings.length);
-    bookings.forEach((b,i)=>console.log(i,b.id,b.date,b.startTime,b.petName,b.status));
-  }catch(e){console.error('loadFromStorage:',e);}
+// ══════════════════════════════════════════
+// SUPABASE CONFIG
+// ══════════════════════════════════════════
+const SB_URL = 'https://qlyyeetzvtegbgasmmmb.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFseXllZXR6dnRlZ2JnYXNtbW1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNTA1MjMsImV4cCI6MjA5MzgyNjUyM30.nryBXiYnGTPNpAAEPOdqRExVDd3IeT4S0vAiZ1sHkkg';
+
+// Auth token — starts as anon, replaced with user JWT after login
+let SB_TOKEN = SB_ANON;
+
+function sbHeaders(extra={}){
+  return Object.assign({
+    'Content-Type': 'application/json',
+    'apikey': SB_ANON,
+    'Authorization': 'Bearer ' + SB_TOKEN,
+    'Prefer': 'return=representation'
+  }, extra);
 }
+
+// ── FIELD MAPPING ──────────────────────────
+function toRow(bk){
+  return {
+    id:                     bk.id,
+    customer_name:          bk.customerName   || '',
+    phone:                  bk.phone          || '',
+    pet_name:               bk.petName        || '',
+    pet_type:               bk.petType        || '',
+    weight_range:           bk.weightRange    || '',
+    coat_type:              bk.coatType       || '',
+    service:                bk.service        || '',
+    add_ons:                JSON.stringify(bk.addOns || []),
+    estimated_price_min:    bk.estimatedPriceMin    || 0,
+    estimated_price_max:    bk.estimatedPriceMax    || 0,
+    estimated_duration_min: bk.estimatedDurationMin || 60,
+    estimated_duration_max: bk.estimatedDurationMax || 60,
+    date:                   bk.date           || '',
+    start_time:             bk.startTime      || '',
+    end_time_min:           bk.endTimeMin     || '',
+    end_time_max:           bk.endTimeMax     || '',
+    end_time:               bk.endTime        || '',
+    groomer_id:             bk.groomerId      || 'groomer1',
+    status:                 bk.status         || 'รอยืนยัน',
+    notes:                  bk.notes          || '',
+    created_at:             bk.createdAt      || new Date().toISOString()
+  };
+}
+
+function fromRow(row){
+  let addOns = [];
+  try { addOns = typeof row.add_ons === 'string' ? JSON.parse(row.add_ons) : (row.add_ons || []); } catch(e){}
+  return {
+    id:                   row.id,
+    customerName:         row.customer_name          || '',
+    phone:                row.phone                  || '',
+    petName:              row.pet_name               || '',
+    petType:              row.pet_type               || '',
+    weightRange:          row.weight_range           || '',
+    coatType:             row.coat_type              || '',
+    service:              row.service                || '',
+    addOns,
+    estimatedPriceMin:    row.estimated_price_min    || 0,
+    estimatedPriceMax:    row.estimated_price_max    || 0,
+    estimatedDurationMin: row.estimated_duration_min || 60,
+    estimatedDurationMax: row.estimated_duration_max || 60,
+    date:                 row.date                   || '',
+    startTime:            row.start_time             || '',
+    endTimeMin:           row.end_time_min           || '',
+    endTimeMax:           row.end_time_max           || '',
+    endTime:              row.end_time               || '',
+    groomerId:            row.groomer_id             || 'groomer1',
+    status:               row.status                 || 'รอยืนยัน',
+    notes:                row.notes                  || '',
+    createdAt:            row.created_at             || ''
+  };
+}
+
+// ── PARTIAL UPDATE MAP (JS field → DB column) ──
+const FIELD_MAP = {
+  customerName:'customer_name', phone:'phone',
+  petName:'pet_name', petType:'pet_type',
+  weightRange:'weight_range', coatType:'coat_type',
+  service:'service', addOns:'add_ons',
+  estimatedPriceMin:'estimated_price_min', estimatedPriceMax:'estimated_price_max',
+  estimatedDurationMin:'estimated_duration_min', estimatedDurationMax:'estimated_duration_max',
+  date:'date', startTime:'start_time',
+  endTimeMin:'end_time_min', endTimeMax:'end_time_max', endTime:'end_time',
+  groomerId:'groomer_id', status:'status', notes:'notes'
+};
+
+// ── DATA STATE ─────────────────────────────
+const STORAGE_KEY = 'bookings'; // kept for offline fallback key
+let bookings = [];
+let dbOnline = false;
+
+// ── STATUS BANNER ──────────────────────────
+function setDbStatus(state, msg){
+  let el = document.getElementById('dbStatusBanner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'dbStatusBanner';
+    el.style.cssText = 'position:fixed;top:58px;left:0;right:0;text-align:center;padding:7px 16px;font-size:12px;font-weight:600;z-index:300;pointer-events:none;transition:opacity .4s';
+    document.body.appendChild(el);
+  }
+  const styles = {
+    loading: 'background:#F2F7CD;color:#6b5c50',
+    ok:      'background:#E8F5EE;color:#2a5a38',
+    error:   'background:#FDECEA;color:#8a2020',
+    offline: 'background:#F4E2E2;color:#8a2020'
+  };
+  el.style.cssText += ';' + (styles[state]||styles.loading);
+  el.textContent = msg; el.style.opacity = '1';
+  if(state === 'ok') setTimeout(()=>{ el.style.opacity='0'; }, 2500);
+}
+
+// ── LOAD ───────────────────────────────────
+async function loadBookings(){
+  setDbStatus('loading','⏳ กำลังโหลดข้อมูล...');
+  try {
+    const res = await fetch(
+      SB_URL + '/rest/v1/bookings?select=*&order=date.asc,start_time.asc',
+      { headers: sbHeaders({'Prefer':''}) }
+    );
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    bookings.length = 0;
+    rows.forEach(r => bookings.push(fromRow(r)));
+    dbOnline = true;
+    // Mirror to localStorage for offline fallback
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+    setDbStatus('ok', '✓ โหลดข้อมูลเรียบร้อย (' + bookings.length + ' รายการ)');
+    console.log('loadBookings: Supabase OK,', bookings.length, 'rows');
+  } catch(err){
+    dbOnline = false;
+    console.warn('loadBookings: Supabase failed, using localStorage fallback:', err.message);
+    // Fallback to localStorage
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const stored = raw ? JSON.parse(raw) : [];
+      bookings.length = 0; stored.forEach(b => bookings.push(b));
+      setDbStatus('offline', '⚠️ ไม่ได้เชื่อมต่อฐานข้อมูล — แสดงข้อมูลจาก cache (' + bookings.length + ' รายการ)');
+    } catch(e2){ setDbStatus('error', '❌ โหลดข้อมูลไม่ได้'); }
+  }
+}
+
+// ── SAVE (INSERT) ──────────────────────────
+async function saveToStorage(){
+  // Called after push(newBk) — write the last booking to Supabase
+  // Admin quick-booking: handled inline in saveQuickBooking
+  // This is the fallback for any direct array push
+  if(!dbOnline){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+  }
+}
+
+// ── UPDATE ─────────────────────────────────
+async function updateBooking(id, fields){
+  // 1. Update in-memory immediately
+  const bk = bookings.find(b => b.id === id);
+  if(bk) Object.assign(bk, fields);
+
+  if(dbOnline){
+    // 2. Build partial DB row from changed JS fields
+    const partial = {};
+    Object.entries(fields).forEach(([k,v]) => {
+      const col = FIELD_MAP[k];
+      if(col){
+        partial[col] = k === 'addOns' ? JSON.stringify(v) : v;
+      }
+    });
+    if(Object.keys(partial).length === 0) return;
+    try {
+      const res = await fetch(
+        SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
+        { method:'PATCH', headers:sbHeaders({'Prefer':'return=minimal'}), body:JSON.stringify(partial) }
+      );
+      if(!res.ok){ const t=await res.text(); console.error('updateBooking failed:', res.status, t); }
+      else { console.log('updateBooking OK:', id, Object.keys(partial)); }
+    } catch(err){
+      console.error('updateBooking error:', err.message);
+    }
+  } else {
+    // Offline: update localStorage
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+  }
+}
+
+// ── DELETE ─────────────────────────────────
+async function deleteBooking(id){
+  if(dbOnline){
+    try {
+      await fetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
+        { method:'DELETE', headers:sbHeaders({'Prefer':'return=minimal'}) });
+    } catch(err){ console.error('deleteBooking error:', err.message); }
+  }
+}
+
+// ── TIME HELPERS ───────────────────────────
 function timeToMin(t){if(!t||!t.includes(':'))return 0;const[h,m]=t.split(':').map(Number);return h*60+m;}
 function minToTime(m){return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
 function overlaps(t1,d1,t2,d2){const s1=timeToMin(t1),e1=s1+(d1||0),s2=timeToMin(t2),e2=s2+(d2||0);return s1<e2&&e1>s2;}
 function calcEndTime(s,d){return minToTime(timeToMin(s)+(d||60));}
-async function loadBookings(){loadFromStorage();}
-async function updateBooking(id,fields){const bk=bookings.find(b=>b.id===id);if(bk)Object.assign(bk,fields);saveToStorage();}
 
 // ── Buffer time calculation ──
 // Returns extra buffer minutes based on booking characteristics
@@ -1652,7 +1834,7 @@ function qbCalc(){
   const over=startM+mx>20*60;
   document.getElementById('qbEstimate').innerHTML=`⏱ ประมาณ ${mn/60}–${mx/60} ชั่วโมง &nbsp;·&nbsp; รับกลับประมาณ <strong>${endRange} น.</strong>`+(over?'<br><span style="color:#c05050;font-size:11px">⚠️ อาจเกินเวลาปิดร้าน 20:00</span>':'');
 }
-function saveQuickBooking(){
+async function saveQuickBooking(){
   const errEl=document.getElementById('qbErr');errEl.classList.remove('visible');
   const name=document.getElementById('qbName').value.trim(),phone=document.getElementById('qbPhone').value.trim();
   const pet=document.getElementById('qbPet').value.trim(),petType=document.getElementById('qbType').value;
@@ -1680,11 +1862,26 @@ function saveQuickBooking(){
   };
   const clash=bookings.filter(b=>b.date===date&&b.groomerId===groomer&&b.status!=='ยกเลิก'&&overlaps(b.startTime,b.estimatedDurationMax,start,mx));
   if(clash.length){errEl.textContent='ช่วงเวลาดังกล่าวชนกับการจองของช่างคนนี้';errEl.classList.add('visible');return;}
-  bookings.push(newBk);saveToStorage();
+  // Save to Supabase (or localStorage fallback)
+  if(dbOnline){
+    try {
+      const res = await fetch(SB_URL + '/rest/v1/bookings',
+        { method:'POST', headers:sbHeaders(), body:JSON.stringify(toRow(newBk)) });
+      if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+': '+t); }
+      console.log('Quick booking saved to Supabase:', newBk.id);
+    } catch(err){
+      console.error('saveQuickBooking Supabase error:', err.message);
+      showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');
+      return;
+    }
+  } else {
+    // Offline fallback
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+  }
+  bookings.push(newBk);
   document.getElementById('qbOverlay').classList.add('hidden');
   showToast('บันทึกการจองด่วนเรียบร้อยแล้ว ✓','success');
   buildAdminStats();
-  // Navigate to and highlight the new booking (same logic as search result)
   selectSearchResult(newBk.id);
 }
 
@@ -1694,7 +1891,13 @@ function askCancel(e,id,petName){e.stopPropagation();e.preventDefault();cancelTa
 function confirmCancel(){
   if(!cancelTargetId)return;
   const bk=bookings.find(b=>b.id===cancelTargetId);
-  if(bk){const idx=bookings.indexOf(bk);if(idx>-1)bookings.splice(idx,1);saveToStorage();}
+  if(bk){
+    const idx=bookings.indexOf(bk);
+    if(idx>-1) bookings.splice(idx,1);
+    deleteBooking(cancelTargetId); // remove from Supabase
+    // Update localStorage fallback
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+  }
   cancelTargetId=null;document.getElementById('confirmOverlay').classList.add('hidden');
   showToast('ยกเลิกคิวเรียบร้อยแล้ว','error');renderCurrentView();buildAdminStats();
 }
