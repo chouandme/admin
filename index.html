@@ -897,32 +897,32 @@ async function saveToStorage(){
 
 // ── UPDATE ─────────────────────────────────
 async function updateBooking(id, fields){
-  // 1. Update in-memory immediately
+  // 1. Update in-memory immediately (optimistic)
   const bk = bookings.find(b => b.id === id);
   if(bk) Object.assign(bk, fields);
 
-  if(dbOnline){
-    // 2. Build partial DB row from changed JS fields
-    const partial = {};
-    Object.entries(fields).forEach(([k,v]) => {
-      const col = FIELD_MAP[k];
-      if(col){
-        partial[col] = k === 'addOns' ? JSON.stringify(v) : v;
-      }
-    });
-    if(Object.keys(partial).length === 0) return;
-    try {
-      const res = await fetch(
-        SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
-        { method:'PATCH', headers:sbHeaders({'Prefer':'return=minimal'}), body:JSON.stringify(partial) }
-      );
-      if(!res.ok){ const t=await res.text(); console.error('updateBooking failed:', res.status, t); }
-      else { console.log('updateBooking OK:', id, Object.keys(partial)); }
-    } catch(err){
-      console.error('updateBooking error:', err.message);
+  // 2. Build partial DB row
+  const partial = {};
+  Object.entries(fields).forEach(([k,v]) => {
+    const col = FIELD_MAP[k];
+    if(col) partial[col] = k === 'addOns' ? JSON.stringify(v) : v;
+  });
+  if(Object.keys(partial).length === 0) return;
+
+  // 3. Always try Supabase — fallback to localStorage on failure
+  try {
+    const res = await fetch(
+      SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
+      { method:'PATCH', headers:sbHeaders({'Prefer':'return=minimal'}), body:JSON.stringify(partial) }
+    );
+    if(!res.ok){
+      const t = await res.text();
+      console.error('updateBooking PATCH failed:', res.status, t);
+      throw new Error('HTTP ' + res.status);
     }
-  } else {
-    // Offline: update localStorage
+    console.log('updateBooking OK:', id, Object.keys(partial));
+  } catch(err){
+    console.error('updateBooking Supabase error:', err.message, '— saving to localStorage fallback');
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
   }
 }
@@ -1393,7 +1393,16 @@ function renderWeekly(){
   if(searchQuery)setTimeout(()=>{const f=document.querySelector('.week-bk-block.search-highlight');if(f)f.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},50);
 }
 function canBook(date,time,dur,excludeId=null){
-  return bookings.filter(b=>b.id!==excludeId&&b.date===date&&b.status!=='ยกเลิก'&&overlaps(b.startTime,effectiveDuration(b),time,dur)).length<2;
+  const gs=loadGroomers();
+  // A slot is bookable if at least one groomer has no overlap
+  return gs.some(g=>{
+    const clash=bookings.filter(b=>
+      b.id!==excludeId&&b.date===date&&b.status!=='ยกเลิก'&&
+      (b.groomerId===g.id||(!b.groomerId&&g.id===gs[0]?.id))&&
+      overlaps(b.startTime,effectiveDuration(b),time,dur)
+    );
+    return clash.length===0;
+  });
 }
 
 // DAILY
