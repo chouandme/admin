@@ -184,26 +184,44 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
   min-width:140px;text-align:center;}
 
 /* STATUS */
-.st-waiting{background:#fcffe4;
+.st-waiting{font-family:'Sarabun',sans-serif; font-weight:500; 
+  background:#f5f0ed;
   box-shadow:
     /* rim — highlights (top) */
-    inset 0 3px 6px -2px rgba(255, 255, 255, 1),
-    inset 0 1px 0.5px   rgba(255, 255, 255, 0.9),
+      inset 0 3px 6px -2px rgba(255, 255, 255, 0.699),
+      inset 0 1px 0.5px   rgba(255, 255, 255, 0.425),
     /* rim — shade (bottom + sides) */
     inset  0 -4px 6px -2px rgba(170, 170, 155, 0.22),
     inset -3px  0 6px -2px rgba(170, 170, 155, 0.10),
     inset  3px  0 6px -2px rgba(170, 170, 155, 0.06),
-    /* drop shadow @ 76% */
-    0  1px  1px       rgba(0, 0, 0, 0.015),
-    0  6px 10px       rgba(60, 60, 50, 0.038),
-    0 20px 28px -8px  rgba(60, 60, 50, 0.076),
-    0 40px 60px -20px rgba(60, 60, 50, 0.076);
-  border-top:2px solid #E8B84B;color:var(--text-dark);}
-.st-confirmed{background:#E8F5EE;border-left:3px solid #A0B995;color:#2a5a38;}
-.status-toggle-row{display:flex;gap:8px;margin-top:14px;}
-.status-toggle-btn{flex:1;padding:10px 6px;border-radius:14px;border:2.5px solid transparent;font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;}
-.status-toggle-btn.waiting{background:#FFF8DC;color:#7a5a00;border-color:#E8B84B;}
-.status-toggle-btn.confirmed{background:#E8F5EE;color:#2a5a38;border-color:#A0B995;}
+    /* drop shadow @ 76%, blur capped at 10px */
+    0 1px  1px      rgba(0, 0, 0, 0.015),
+    0 2px  4px      rgba(60, 60, 50, 0.045),
+    0 4px  8px -2px rgba(60, 60, 50, 0.068),
+    0 6px 10px -4px rgba(60, 60, 50, 0.061);
+  border-top:4px solid var(--sand);color:var(--text-dark);}
+.st-confirmed{font-family:'Sarabun',sans-serif; font-weight:700;
+  background:#d6dfce;border-top:4px solid #A0B995;color:var(--text-dark);
+  box-shadow:
+    /* rim — highlights (top) */
+    inset 0 3px 6px -2px rgba(255, 255, 255, 0.226),
+    inset 0 1px 0.5px   rgba(255, 255, 255, 0.425),
+    /* rim — shade (bottom + sides) */
+    inset  0 -4px 6px -2px rgba(170, 170, 155, 0.22),
+    inset -3px  0 6px -2px rgba(170, 170, 155, 0.10),
+    inset  3px  0 6px -2px rgba(170, 170, 155, 0.06),
+    /* drop shadow @ 76%, blur capped at 10px */
+    0 1px  1px      rgba(0, 0, 0, 0.015),
+    0 2px  4px      rgba(60, 60, 50, 0.045),
+    0 4px  8px -2px rgba(60, 60, 50, 0.068),
+    0 6px 10px -4px rgba(60, 60, 50, 0.061);}
+.status-toggle-row{display:flex;gap:8px;margin-top:14px; }
+.status-toggle-btn{flex:1;padding:10px 6px;border-radius:14px;border:2.5px solid transparent;
+  font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .2s;text-align:center;}
+.status-toggle-btn.waiting{background:#FFF8DC;
+  color:var(--text-dark);border-color:#E8B84B;}
+.status-toggle-btn.confirmed{background:#E8F5EE;color:var(--text-dark);border-color:#A0B995;}
 .status-toggle-btn.active{transform:scale(1.04);box-shadow:0 4px 14px rgba(0,0,0,.12);}
 
 /* ── WEEKLY TIME-GRID ── */
@@ -216,8 +234,8 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 .weekly-grid-outer{
   display:flex; flex-wrap:nowrap; min-width:max-content;
   background:#fff; border-radius:20px;
-  padding:10px;
- box-shadow:
+  padding:20px;
+  box-shadow:
     /* rim — highlights (top) */
     inset 0 3px 6px -2px rgba(255, 255, 255, 1),
     inset 0 1px 0.5px   rgba(255, 255, 255, 0.9),
@@ -225,11 +243,11 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
     inset  0 -4px 6px -2px rgba(170, 170, 155, 0.22),
     inset -3px  0 6px -2px rgba(170, 170, 155, 0.10),
     inset  3px  0 6px -2px rgba(170, 170, 155, 0.06),
-    /* drop shadow @ 76%, blur capped at 20px */
-    0  1px  1px       rgba(0, 0, 0, 0.015),
-    0  3px  6px       rgba(60, 60, 50, 0.038),
-    0  8px 14px -4px  rgba(60, 60, 50, 0.068),
-    0 14px 20px -8px  rgba(60, 60, 50, 0.061);
+    /* drop shadow @ 76%, blur capped at 10px */
+    0 1px  1px      rgba(0, 0, 0, 0.015),
+    0 2px  4px      rgba(60, 60, 50, 0.045),
+    0 4px  8px -2px rgba(60, 60, 50, 0.068),
+    0 6px 10px -4px rgba(60, 60, 50, 0.061);
 }
 
 /* Gutter: identical dimensions to daily-gutter */
