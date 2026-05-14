@@ -1,1 +1,1228 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Chou&Me Pet Wellness</title>
+<link rel="icon" href="https://i.ibb.co/q3nkWPGJ/couandmelogo.png" type="image/png">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Sarabun', 'Kanit', sans-serif;
+  background: #f0f4f8;
+  color: #334155;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+
+/* ── SIDEBAR ──────────────────────────────────────────── */
+#sidebar {
+  position: fixed; top: 0; left: 0;
+  width: 240px; height: 100vh;
+  background: #1e293b;
+  color: #e2e8f0;
+  display: flex; flex-direction: column;
+  z-index: 100;
+  transition: transform .25s;
+}
+#sidebar-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid #334155;
+}
+#sidebar-header img { width: 36px; height: 36px; border-radius: 50%; }
+#sidebar-header span { font-size: 15px; font-weight: 600; }
+#sidebar nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+#sidebar nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px;
+  font-size: 14px; color: #94a3b8;
+  transition: background .15s, color .15s;
+  border-radius: 6px; margin: 2px 8px;
+}
+#sidebar nav a:hover,
+#sidebar nav a.active {
+  background: #334155; color: #f8fafc;
+}
+#sidebar nav a .icon { font-size: 18px; width: 22px; text-align: center; }
+#sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #334155;
+  font-size: 12px; color: #475569;
+}
+
+/* ── TOPBAR ───────────────────────────────────────────── */
+#topbar {
+  position: fixed; top: 0; left: 240px; right: 0;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  z-index: 99;
+}
+#topbar-title { font-size: 16px; font-weight: 600; color: #1e293b; }
+#topbar-actions { display: flex; align-items: center; gap: 12px; }
+#sync-btn {
+  background: #3b82f6; color: #fff;
+  border: none; border-radius: 6px;
+  padding: 6px 14px; font-size: 13px;
+  display: flex; align-items: center; gap: 6px;
+}
+#sync-btn:hover { background: #2563eb; }
+#online-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 99px;
+  background: #dcfce7; color: #166534;
+}
+#online-badge.offline { background: #fee2e2; color: #991b1b; }
+
+/* ── MAIN CONTENT ─────────────────────────────────────── */
+#main {
+  margin-left: 240px;
+  padding: 80px 28px 40px;
+  min-height: 100vh;
+}
+
+/* ── VIEW PANELS ──────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── STAT CARDS ───────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 28px;
+}
+.stat-card {
+  background: #fff; border-radius: 12px;
+  padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  display: flex; align-items: center; gap: 16px;
+}
+.stat-icon {
+  width: 48px; height: 48px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.stat-info .label { font-size: 12px; color: #64748b; }
+.stat-info .value { font-size: 26px; font-weight: 700; color: #1e293b; }
+
+/* ── SECTION CARD ─────────────────────────────────────── */
+.card {
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  overflow: hidden; margin-bottom: 24px;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title { font-size: 15px; font-weight: 600; }
+.card-body { padding: 20px; }
+
+/* ── TABLES ───────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th {
+  background: #f8fafc; text-align: left;
+  padding: 10px 12px; font-size: 12px;
+  color: #64748b; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+td { padding: 11px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8fafc; }
+
+/* ── BADGES ───────────────────────────────────────────── */
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 99px;
+}
+.badge-pending  { background:#fef9c3; color:#854d0e; }
+.badge-confirmed{ background:#dbeafe; color:#1e40af; }
+.badge-done     { background:#dcfce7; color:#166534; }
+.badge-cancelled{ background:#fee2e2; color:#991b1b; }
+.badge-noshow   { background:#f3e8ff; color:#6b21a8; }
+
+/* ── FORMS ────────────────────────────────────────────── */
+.form-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+.form-group label { font-size: 12px; font-weight: 600; color: #475569; }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 7px 10px; font-size: 13px; font-family: inherit;
+  background: #fff; color: #1e293b;
+  transition: border-color .15s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none; border-color: #3b82f6;
+}
+.btn {
+  border: none; border-radius: 6px;
+  padding: 8px 18px; font-size: 13px; font-weight: 600;
+  transition: opacity .15s;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-success { background: #22c55e; color: #fff; }
+.btn-danger  { background: #ef4444; color: #fff; }
+.btn-secondary { background: #e2e8f0; color: #334155; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ── SEARCH & FILTER BAR ──────────────────────────────── */
+.filter-bar {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 16px; align-items: flex-end;
+}
+.filter-bar input,
+.filter-bar select {
+  border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 7px 10px; font-size: 13px; font-family: inherit;
+  background: #fff;
+}
+.filter-bar input { flex: 1; min-width: 180px; }
+
+/* ── MODALS ───────────────────────────────────────────── */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 14px;
+  padding: 28px; width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-close {
+  background: none; border: none;
+  font-size: 20px; color: #94a3b8; cursor: pointer;
+}
+
+/* ── TOAST ────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: #1e293b; color: #f8fafc;
+  padding: 12px 20px; border-radius: 8px;
+  font-size: 13px; opacity: 0;
+  transition: opacity .3s;
+  z-index: 300;
+}
+#toast.show { opacity: 1; }
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #topbar { left: 0; }
+  #main { margin-left: 0; padding-top: 72px; }
+}
+
+/* ── LOGIN ────────────────────────────────────────────── */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: #f0f4f8;
+}
+.login-box {
+  background: #fff; border-radius: 16px;
+  padding: 40px 36px; width: 100%; max-width: 380px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.1);
+  text-align: center;
+}
+.login-box img { width: 72px; margin-bottom: 12px; }
+.login-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.login-box p { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+.login-box input {
+  width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; margin-bottom: 12px;
+  font-family: inherit;
+}
+.login-box button {
+  width: 100%; background: #1e293b; color: #fff;
+  border: none; border-radius: 8px;
+  padding: 11px; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.login-box button:hover { background: #0f172a; }
+#login-err { color: #ef4444; font-size: 12px; margin-top: 8px; }
+
+/* ── QUICK-BOOK PANEL ─────────────────────────────────── */
+#qb-panel {
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  padding: 24px; margin-bottom: 24px;
+}
+#qb-panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+/* ── SCHEDULE GRID ────────────────────────────────────── */
+#schedule-container {
+  overflow-x: auto;
+}
+.schedule-grid {
+  display: grid;
+  min-width: 700px;
+}
+.schedule-header {
+  display: grid;
+  gap: 4px;
+  padding: 0 0 8px;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 12px; font-weight: 700;
+  color: #475569; text-transform: uppercase;
+}
+.schedule-row {
+  display: grid;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: start;
+}
+.sched-cell {
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 12px;
+  min-height: 32px;
+}
+.sched-chip {
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sched-chip:hover { background: #bfdbfe; }
+
+/* report table extras */
+.report-summary {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+}
+.rs-card {
+  flex: 1; min-width: 130px;
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px;
+}
+.rs-card .rs-label { font-size: 11px; color: #64748b; }
+.rs-card .rs-value { font-size: 22px; font-weight: 700; color: #1e293b; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN SCREEN ═══════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <img src="https://i.ibb.co/q3nkWPGJ/couandmelogo.png" alt="logo">
+    <h2>Chou&amp;Me Admin</h2>
+    <p>เข้าสู่ระบบเพื่อจัดการนัดหมาย</p>
+    <input id="login-pass" type="password" placeholder="รหัสผ่าน">
+    <button onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div id="login-err"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP SHELL ═══════════════════════ -->
+<div id="app" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <img src="https://i.ibb.co/q3nkWPGJ/couandmelogo.png" alt="logo">
+      <span>Chou&amp;Me Admin</span>
+    </div>
+    <nav>
+      <a href="#" class="active" data-view="dashboard" onclick="navigate(event)">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a href="#" data-view="bookings" onclick="navigate(event)">
+        <span class="icon">📅</span> Bookings
+      </a>
+      <a href="#" data-view="quickbook" onclick="navigate(event)">
+        <span class="icon">⚡</span> Quick Book
+      </a>
+      <a href="#" data-view="schedule" onclick="navigate(event)">
+        <span class="icon">🗓️</span> Schedule
+      </a>
+      <a href="#" data-view="groomers" onclick="navigate(event)">
+        <span class="icon">✂️</span> Groomers
+      </a>
+      <a href="#" data-view="reports" onclick="navigate(event)">
+        <span class="icon">📈</span> Reports
+      </a>
+      <a href="#" data-view="settings" onclick="navigate(event)">
+        <span class="icon">⚙️</span> Settings
+      </a>
+    </nav>
+    <div id="sidebar-footer">v2.4 · Chou&amp;Me</div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header id="topbar">
+    <span id="topbar-title">Dashboard</span>
+    <div id="topbar-actions">
+      <span id="online-badge" class="offline">Offline</span>
+      <button id="sync-btn" onclick="manualSync()">🔄 Sync</button>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- ── DASHBOARD ── -->
+    <section id="view-dashboard" class="view active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dbeafe">📅</div>
+          <div class="stat-info">
+            <div class="label">Today</div>
+            <div class="value" id="stat-today">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dcfce7">✅</div>
+          <div class="stat-info">
+            <div class="label">Confirmed</div>
+            <div class="value" id="stat-confirmed">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef9c3">⏳</div>
+          <div class="stat-info">
+            <div class="label">Pending</div>
+            <div class="value" id="stat-pending">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#f3e8ff">📆</div>
+          <div class="stat-info">
+            <div class="label">This Week</div>
+            <div class="value" id="stat-week">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Today's Appointments</span>
+          <button class="btn btn-primary btn-sm" onclick="navigate(null,'quickbook')">+ Book</button>
+        </div>
+        <div class="card-body">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Time</th><th>Pet</th><th>Owner</th>
+                <th>Service</th><th>Groomer</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="today-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BOOKINGS ── -->
+    <section id="view-bookings" class="view">
+      <div class="filter-bar">
+        <input id="bk-search" type="text" placeholder="Search pet / owner…" oninput="renderBookings()">
+        <select id="bk-status" onchange="renderBookings()">
+          <option value="">All Statuses</option>
+          <option>pending</option><option>confirmed</option>
+          <option>done</option><option>cancelled</option><option>noshow</option>
+        </select>
+        <input id="bk-date" type="date" onchange="renderBookings()">
+        <button class="btn btn-secondary btn-sm" onclick="clearBookingFilters()">Clear</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Bookings</span>
+          <button class="btn btn-primary btn-sm" onclick="navigate(null,'quickbook')">+ New</button>
+        </div>
+        <div class="card-body">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Date</th><th>Time</th><th>Pet</th><th>Owner</th>
+                <th>Phone</th><th>Service</th><th>Groomer</th>
+                <th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="bookings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── QUICK BOOK ── -->
+    <section id="view-quickbook" class="view">
+      <div id="qb-panel">
+        <h3>⚡ Quick Book</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pet Name *</label>
+            <input id="qb-pet" type="text" placeholder="e.g. Mochi">
+          </div>
+          <div class="form-group">
+            <label>Owner Name *</label>
+            <input id="qb-owner" type="text" placeholder="e.g. Somchai">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input id="qb-phone" type="tel" placeholder="0812345678">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Service *</label>
+            <select id="qb-service">
+              <option>Bath &amp; Blow-dry</option>
+              <option>Full Groom</option>
+              <option>Nail Trim</option>
+              <option>Ear Clean</option>
+              <option>Teeth Brush</option>
+              <option>Spa Package</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Groomer</label>
+            <select id="qb-groomer"></select>
+          </div>
+          <div class="form-group">
+            <label>Date *</label>
+            <input id="qb-date" type="date">
+          </div>
+          <div class="form-group">
+            <label>Time *</label>
+            <input id="qb-time" type="time" value="10:00">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Notes</label>
+            <input id="qb-notes" type="text" placeholder="Any special requests…">
+          </div>
+          <div class="form-group" style="max-width:140px">
+            <label>Price (฿)</label>
+            <input id="qb-price" type="number" placeholder="0">
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="quickBook()">💾 Save Booking</button>
+      </div>
+    </section>
+
+    <!-- ── SCHEDULE ── -->
+    <section id="view-schedule" class="view">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Weekly Schedule</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-secondary btn-sm" onclick="shiftWeek(-1)">◀ Prev</button>
+            <span id="week-label" style="font-size:13px;font-weight:600;"></span>
+            <button class="btn btn-secondary btn-sm" onclick="shiftWeek(1)">Next ▶</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="schedule-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── GROOMERS ── -->
+    <section id="view-groomers" class="view">
+      <div class="card" style="max-width:540px">
+        <div class="card-header">
+          <span class="card-title">Groomers</span>
+          <button class="btn btn-primary btn-sm" onclick="openGroomerModal()">+ Add</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Name</th><th>Speciality</th><th>Status</th><th></th></tr></thead>
+            <tbody id="groomers-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── REPORTS ── -->
+    <section id="view-reports" class="view">
+      <div class="filter-bar">
+        <input id="rpt-from" type="date">
+        <span style="align-self:center">–</span>
+        <input id="rpt-to" type="date">
+        <button class="btn btn-primary btn-sm" onclick="buildReport()">Generate</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+      <div class="report-summary" id="rpt-summary"></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Booking Detail</span></div>
+        <div class="card-body">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Date</th><th>Time</th><th>Pet</th><th>Owner</th>
+                <th>Service</th><th>Groomer</th><th>Status</th><th>Price</th>
+              </tr></thead>
+              <tbody id="rpt-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section id="view-settings" class="view">
+      <div class="card" style="max-width:500px">
+        <div class="card-header"><span class="card-title">Settings</span></div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:16px">
+            <label>Admin Password (change)</label>
+            <input id="set-pass" type="password" placeholder="New password">
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label>Supabase URL</label>
+            <input id="set-sb-url" type="text" placeholder="https://xxx.supabase.co">
+          </div>
+          <div class="form-group" style="margin-bottom:20px">
+            <label>Supabase Anon Key</label>
+            <input id="set-sb-key" type="text" placeholder="eyJ…">
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+          <hr style="margin:20px 0;border-color:#f1f5f9">
+          <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All Local Data</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- /#app -->
+
+<!-- ═══════════════════ BOOKING MODAL ═══════════════════ -->
+<div id="modal-booking" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-booking-title">Edit Booking</span>
+      <button class="modal-close" onclick="closeModal('modal-booking')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Pet Name</label>
+        <input id="m-pet" type="text">
+      </div>
+      <div class="form-group">
+        <label>Owner</label>
+        <input id="m-owner" type="text">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input id="m-phone" type="tel">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Service</label>
+        <select id="m-service">
+          <option>Bath &amp; Blow-dry</option>
+          <option>Full Groom</option>
+          <option>Nail Trim</option>
+          <option>Ear Clean</option>
+          <option>Teeth Brush</option>
+          <option>Spa Package</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Groomer</label>
+        <select id="m-groomer"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date</label>
+        <input id="m-date" type="date">
+      </div>
+      <div class="form-group">
+        <label>Time</label>
+        <input id="m-time" type="time">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="m-status">
+          <option>pending</option><option>confirmed</option>
+          <option>done</option><option>cancelled</option><option>noshow</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Notes</label>
+        <input id="m-notes" type="text">
+      </div>
+      <div class="form-group" style="max-width:140px">
+        <label>Price (฿)</label>
+        <input id="m-price" type="number">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" onclick="saveBooking()">Save</button>
+      <button class="btn btn-danger" onclick="deleteBookingModal()">Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-booking')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ GROOMER MODAL ═══════════════════ -->
+<div id="modal-groomer" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Groomer</span>
+      <button class="modal-close" onclick="closeModal('modal-groomer')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Name *</label>
+        <input id="g-name" type="text" placeholder="Groomer name">
+      </div>
+      <div class="form-group">
+        <label>Speciality</label>
+        <input id="g-spec" type="text" placeholder="e.g. Small dogs">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Status</label>
+        <select id="g-status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" onclick="saveGroomer()">Save</button>
+      <button class="btn btn-danger" id="g-del-btn" onclick="deleteGroomer()">Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-groomer')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOAST ════════════════════════════ -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CHOU&ME ADMIN  —  v2.4  (localStorage + Supabase hybrid)
+// ═══════════════════════════════════════════════════════════
+
+// ── AUTH ───────────────────────────────────────────────────
+const DEFAULT_PASS = 'chouandme2025';
+function checkAuth(){
+  const ok = sessionStorage.getItem('admin_auth');
+  if(ok){ document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display=''; return true; }
+  return false;
+}
+function doLogin(){
+  const pass = document.getElementById('login-pass').value;
+  const stored = localStorage.getItem('admin_pass') || DEFAULT_PASS;
+  if(pass === stored){
+    sessionStorage.setItem('admin_auth','1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='';
+    initAdmin();
+  } else {
+    document.getElementById('login-err').textContent='รหัสผ่านไม่ถูกต้อง';
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+function doLogout(){
+  sessionStorage.removeItem('admin_auth');
+  location.reload();
+}
+
+// ── SETTINGS ───────────────────────────────────────────────
+function loadSettings(){
+  document.getElementById('set-sb-url').value = localStorage.getItem('sb_url')||'';
+  document.getElementById('set-sb-key').value = localStorage.getItem('sb_key')||'';
+}
+function saveSettings(){
+  const np = document.getElementById('set-pass').value.trim();
+  if(np) localStorage.setItem('admin_pass', np);
+  localStorage.setItem('sb_url', document.getElementById('set-sb-url').value.trim());
+  localStorage.setItem('sb_key', document.getElementById('set-sb-key').value.trim());
+  showToast('Settings saved');
+  initSupabase();
+}
+function clearAllData(){
+  if(!confirm('Delete ALL local bookings?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  bookings=[];
+  buildAdminStats(); renderCurrentView();
+  showToast('Local data cleared');
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────
+let currentView = 'dashboard';
+function navigate(e, forcedView){
+  if(e) e.preventDefault();
+  const view = forcedView || e.currentTarget.dataset.view;
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('#sidebar nav a').forEach(a=>{
+    a.classList.toggle('active', a.dataset.view===view);
+  });
+  document.getElementById('topbar-title').textContent =
+    view.charAt(0).toUpperCase()+view.slice(1);
+  if(view==='schedule') renderSchedule();
+  if(view==='reports')  { setDefaultDates(); buildReport(); }
+  if(view==='settings') loadSettings();
+  if(view==='groomers') renderGroomers();
+}
+function renderCurrentView(){
+  if(currentView==='dashboard') { buildAdminStats(); renderToday(); }
+  else if(currentView==='bookings') renderBookings();
+  else if(currentView==='schedule') renderSchedule();
+  else if(currentView==='reports') buildReport();
+  else if(currentView==='groomers') renderGroomers();
+}
+
+// ── TOAST ──────────────────────────────────────────────────
+function showToast(msg,dur=2800){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ── MODAL ──────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ── SUPABASE CLIENT ────────────────────────────────────────
+let sb = null;
+function initSupabase(){
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if(url && key && window.supabase){
+    sb = window.supabase.createClient(url, key);
+  } else { sb = null; }
+}
+
+// ── STATE ─────────────────────────────────────────────────
+const STORAGE_KEY = 'bookings'; // kept for offline fallback key
+let bookings = [];
+let dbOnline = false;
+
+// ── STATUS BANNER ──────────────────────────────────────────
+function setBadge(on){
+  dbOnline = on;
+  const b = document.getElementById('online-badge');
+  b.textContent = on ? 'Supabase ✓' : 'Offline';
+  b.className = 'online-badge' + (on ? '' : ' offline');
+  // keep id so CSS still works
+  b.id = 'online-badge';
+}
+
+// ── LOAD BOOKINGS ──────────────────────────────────────────
+async function loadBookings(){
+  if(sb){
+    try{
+      const {data,error} = await sb.from('bookings').select('*').order('date').order('time');
+      if(error) throw error;
+      bookings = data || [];
+      setBadge(true);
+      return;
+    }catch(e){ console.warn('Supabase load failed',e); setBadge(false); }
+  }
+  bookings = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+  setBadge(false);
+}
+
+// ── SAVE BOOKING (upsert) ──────────────────────────────────
+async function persistBooking(bk){
+  if(sb){
+    try{
+      const {error} = await sb.from('bookings').upsert(bk,{onConflict:'id'});
+      if(error) throw error;
+      return;
+    }catch(e){ console.warn('Supabase save failed',e); }
+  }
+  const idx = bookings.findIndex(b=>b.id===bk.id);
+  if(idx>=0) bookings[idx]=bk; else bookings.push(bk);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+}
+
+// ── DELETE BOOKING ─────────────────────────────────────────
+async function removeBooking(id){
+  if(sb){
+    try{
+      const {error} = await sb.from('bookings').delete().eq('id',id);
+      if(error) throw error;
+      bookings = bookings.filter(b=>b.id!==id);
+      return;
+    }catch(e){ console.warn('Supabase delete failed',e); }
+  }
+  bookings = bookings.filter(b=>b.id!==id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+}
+
+// ── MANUAL SYNC ────────────────────────────────────────────
+async function manualSync(){
+  if(!sb){ showToast('Configure Supabase in Settings first'); return; }
+  const localRaw = localStorage.getItem(STORAGE_KEY);
+  const local = localRaw ? JSON.parse(localRaw) : [];
+  if(local.length){
+    const {error} = await sb.from('bookings').upsert(local,{onConflict:'id'});
+    if(error){ showToast('Sync error: '+error.message); return; }
+  }
+  await loadBookings();
+  buildAdminStats(); renderCurrentView();
+  showToast('Synced ✓');
+}
+
+// ── GROOMERS (localStorage) ────────────────────────────────
+const GR_KEY='groomers';
+function loadGroomers(){
+  const d=localStorage.getItem(GR_KEY);
+  if(d) return JSON.parse(d);
+  const defaults=[
+    {id:'g1',name:'Nong Fah',  speciality:'Small dogs',status:'active'},
+    {id:'g2',name:'P\'Kob',    speciality:'Cats',      status:'active'},
+    {id:'g3',name:'Nong Mint', speciality:'All breeds',status:'active'}
+  ];
+  localStorage.setItem(GR_KEY,JSON.stringify(defaults));
+  return defaults;
+}
+let groomers=[];
+function saveGroomersLocal(){ localStorage.setItem(GR_KEY,JSON.stringify(groomers)); }
+function renderGroomers(){
+  const tb=document.getElementById('groomers-tbody');
+  tb.innerHTML=groomers.map(g=>`
+    <tr>
+      <td>${g.name}</td>
+      <td>${g.speciality||'—'}</td>
+      <td><span class="badge ${g.status==='active'?'badge-confirmed':'badge-cancelled'}">
+        ${g.status}</span></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="openGroomerModal('${g.id}')">Edit</button></td>
+    </tr>`).join('');
+}
+let editingGroomerId=null;
+function openGroomerModal(id=null){
+  editingGroomerId=id;
+  if(id){
+    const g=groomers.find(x=>x.id===id);
+    document.getElementById('g-name').value=g.name;
+    document.getElementById('g-spec').value=g.speciality||'';
+    document.getElementById('g-status').value=g.status;
+    document.getElementById('g-del-btn').style.display='';
+  } else {
+    document.getElementById('g-name').value='';
+    document.getElementById('g-spec').value='';
+    document.getElementById('g-status').value='active';
+    document.getElementById('g-del-btn').style.display='none';
+  }
+  openModal('modal-groomer');
+}
+function saveGroomer(){
+  const name=document.getElementById('g-name').value.trim();
+  if(!name){showToast('Name required');return;}
+  if(editingGroomerId){
+    const g=groomers.find(x=>x.id===editingGroomerId);
+    g.name=name; g.speciality=document.getElementById('g-spec').value.trim();
+    g.status=document.getElementById('g-status').value;
+  } else {
+    groomers.push({id:'g'+Date.now(),name,
+      speciality:document.getElementById('g-spec').value.trim(),
+      status:document.getElementById('g-status').value});
+  }
+  saveGroomersLocal(); renderGroomers(); refreshQbGroomerDropdown();
+  closeModal('modal-groomer'); showToast('Groomer saved');
+}
+function deleteGroomer(){
+  if(!confirm('Delete this groomer?')) return;
+  groomers=groomers.filter(g=>g.id!==editingGroomerId);
+  saveGroomersLocal(); renderGroomers(); refreshQbGroomerDropdown();
+  closeModal('modal-groomer'); showToast('Groomer deleted');
+}
+function refreshQbGroomerDropdown(){
+  ['qb-groomer','m-groomer'].forEach(id=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— Any —</option>'+
+      groomers.filter(g=>g.status==='active')
+        .map(g=>`<option value="${g.name}">${g.name}</option>`).join('');
+    sel.value=cur;
+  });
+}
+
+// ── QUICK BOOK ─────────────────────────────────────────────
+function initQbDate(){
+  const d=new Date(); const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  document.getElementById('qb-date').value=`${y}-${m}-${day}`;
+}
+async function quickBook(){
+  const pet   = document.getElementById('qb-pet').value.trim();
+  const owner = document.getElementById('qb-owner').value.trim();
+  const date  = document.getElementById('qb-date').value;
+  const time  = document.getElementById('qb-time').value;
+  if(!pet||!owner||!date||!time){showToast('Fill required fields');return;}
+  const bk={
+    id: 'bk'+Date.now(),
+    pet_name   : pet,
+    owner_name : owner,
+    phone      : document.getElementById('qb-phone').value.trim(),
+    service    : document.getElementById('qb-service').value,
+    groomer    : document.getElementById('qb-groomer').value,
+    date, time,
+    status     : 'confirmed',
+    notes      : document.getElementById('qb-notes').value.trim(),
+    price      : parseFloat(document.getElementById('qb-price').value)||0,
+    created_at : new Date().toISOString()
+  };
+  await persistBooking(bk);
+  showToast('Booking saved ✓');
+  ['qb-pet','qb-owner','qb-phone','qb-notes','qb-price'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  initQbDate();
+}
+
+// ── ADMIN STATS ────────────────────────────────────────────
+function buildAdminStats(){
+  const today = new Date().toISOString().slice(0,10);
+  const weekEnd = new Date(); weekEnd.setDate(weekEnd.getDate()+7);
+  const we = weekEnd.toISOString().slice(0,10);
+  document.getElementById('stat-today').textContent =
+    bookings.filter(b=>b.date===today).length;
+  document.getElementById('stat-confirmed').textContent =
+    bookings.filter(b=>b.status==='confirmed').length;
+  document.getElementById('stat-pending').textContent =
+    bookings.filter(b=>b.status==='pending').length;
+  document.getElementById('stat-week').textContent =
+    bookings.filter(b=>b.date>=today && b.date<=we).length;
+  renderToday();
+}
+
+// ── TODAY TABLE ────────────────────────────────────────────
+function renderToday(){
+  const today = new Date().toISOString().slice(0,10);
+  const rows = bookings.filter(b=>b.date===today)
+    .sort((a,b)=>a.time.localeCompare(b.time));
+  document.getElementById('today-tbody').innerHTML =
+    rows.length ? rows.map(bookingRow).join('') :
+    '<tr><td colspan="7" style="text-align:center;color:#94a3b8">No appointments today</td></tr>';
+}
+
+// ── BOOKING ROW HELPER ─────────────────────────────────────
+function bookingRow(b){
+  return `<tr>
+    <td>${b.time||''}</td>
+    <td>${b.pet_name||''}</td>
+    <td>${b.owner_name||''}</td>
+    <td>${b.service||''}</td>
+    <td>${b.groomer||'—'}</td>
+    <td><span class="badge badge-${b.status||'pending'}">${b.status||'pending'}</span></td>
+    <td>
+      <button class="btn btn-secondary btn-sm" onclick="openEditModal('${b.id}')">Edit</button>
+    </td>
+  </tr>`;
+}
+
+// ── ALL BOOKINGS TABLE ─────────────────────────────────────
+function renderBookings(){
+  const search = (document.getElementById('bk-search').value||'').toLowerCase();
+  const status = document.getElementById('bk-status').value;
+  const date   = document.getElementById('bk-date').value;
+  let rows = bookings
+    .filter(b=>{
+      if(status && b.status!==status) return false;
+      if(date   && b.date!==date)     return false;
+      if(search && !(b.pet_name||'').toLowerCase().includes(search)
+                && !(b.owner_name||'').toLowerCase().includes(search)) return false;
+      return true;
+    })
+    .sort((a,b)=>{ const dc=b.date.localeCompare(a.date); return dc||b.time.localeCompare(a.time); });
+  document.getElementById('bookings-tbody').innerHTML =
+    rows.length ? rows.map(b=>`<tr>
+      <td>${b.date||''}</td>
+      <td>${b.time||''}</td>
+      <td>${b.pet_name||''}</td>
+      <td>${b.owner_name||''}</td>
+      <td>${b.phone||''}</td>
+      <td>${b.service||''}</td>
+      <td>${b.groomer||'—'}</td>
+      <td><span class="badge badge-${b.status||'pending'}">${b.status||'pending'}</span></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="openEditModal('${b.id}')">Edit</button></td>
+    </tr>`).join('') :
+    '<tr><td colspan="9" style="text-align:center;color:#94a3b8">No bookings found</td></tr>';
+}
+function clearBookingFilters(){
+  document.getElementById('bk-search').value='';
+  document.getElementById('bk-status').value='';
+  document.getElementById('bk-date').value='';
+  renderBookings();
+}
+
+// ── EDIT MODAL ─────────────────────────────────────────────
+let editingId=null;
+function openEditModal(id){
+  editingId=id;
+  const b=bookings.find(x=>x.id===id);
+  if(!b) return;
+  document.getElementById('modal-booking-title').textContent='Edit Booking — '+b.pet_name;
+  document.getElementById('m-pet').value    = b.pet_name||'';
+  document.getElementById('m-owner').value  = b.owner_name||'';
+  document.getElementById('m-phone').value  = b.phone||'';
+  document.getElementById('m-service').value= b.service||'';
+  document.getElementById('m-groomer').value= b.groomer||'';
+  document.getElementById('m-date').value   = b.date||'';
+  document.getElementById('m-time').value   = b.time||'';
+  document.getElementById('m-status').value = b.status||'pending';
+  document.getElementById('m-notes').value  = b.notes||'';
+  document.getElementById('m-price').value  = b.price||'';
+  openModal('modal-booking');
+}
+async function saveBooking(){
+  const b=bookings.find(x=>x.id===editingId);
+  if(!b) return;
+  b.pet_name   = document.getElementById('m-pet').value.trim();
+  b.owner_name = document.getElementById('m-owner').value.trim();
+  b.phone      = document.getElementById('m-phone').value.trim();
+  b.service    = document.getElementById('m-service').value;
+  b.groomer    = document.getElementById('m-groomer').value;
+  b.date       = document.getElementById('m-date').value;
+  b.time       = document.getElementById('m-time').value;
+  b.status     = document.getElementById('m-status').value;
+  b.notes      = document.getElementById('m-notes').value.trim();
+  b.price      = parseFloat(document.getElementById('m-price').value)||0;
+  await persistBooking(b);
+  closeModal('modal-booking');
+  buildAdminStats(); renderCurrentView();
+  showToast('Booking updated ✓');
+}
+async function deleteBookingModal(){
+  if(!confirm('Delete this booking?')) return;
+  await removeBooking(editingId);
+  closeModal('modal-booking');
+  buildAdminStats(); renderCurrentView();
+  showToast('Booking deleted');
+}
+
+// ── SCHEDULE ───────────────────────────────────────────────
+let scheduleWeekOffset=0;
+function shiftWeek(d){ scheduleWeekOffset+=d; renderSchedule(); }
+function renderSchedule(){
+  const today=new Date();
+  today.setDate(today.getDate()+scheduleWeekOffset*7);
+  // Find Monday
+  const day=today.getDay(); // 0=Sun
+  const diff=today.getDate()-(day===0?6:day-1);
+  const monday=new Date(today.setDate(diff));
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    days.push(d);
+  }
+  document.getElementById('week-label').textContent=
+    `${fmtDate(days[0])} – ${fmtDate(days[6])}`;
+
+  const cols = 1 + groomers.filter(g=>g.status==='active').length;
+  const activeGroomers = groomers.filter(g=>g.status==='active');
+  const gtpl = 'auto ' + activeGroomers.map(()=>'1fr').join(' ');
+
+  let html='<div class="schedule-grid">';
+  // Header
+  html+=`<div class="schedule-header" style="grid-template-columns:80px ${gtpl}">`;
+  html+=`<div>Day</div>`;
+  activeGroomers.forEach(g=>{ html+=`<div>${g.name}</div>`; });
+  html+='</div>';
+  // Rows
+  days.forEach(d=>{
+    const ds=d.toISOString().slice(0,10);
+    const dayBks=bookings.filter(b=>b.date===ds && b.status!=='cancelled');
+    html+=`<div class="schedule-row" style="grid-template-columns:80px ${gtpl}">`;
+    html+=`<div style="font-size:12px;font-weight:600">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}<br>${d.getDate()}/${d.getMonth()+1}</div>`;
+    activeGroomers.forEach(g=>{
+      const gbks=dayBks.filter(b=>b.groomer===g.name);
+      html+=`<div class="sched-cell">`;
+      gbks.sort((a,b)=>a.time.localeCompare(b.time)).forEach(b=>{
+        html+=`<div class="sched-chip" onclick="openEditModal('${b.id}')" title="${b.pet_name} — ${b.service}">${b.time} ${b.pet_name}</div>`;
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  document.getElementById('schedule-container').innerHTML=html;
+}
+function fmtDate(d){
+  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+// ── REPORTS ────────────────────────────────────────────────
+function setDefaultDates(){
+  const today=new Date();
+  const first=new Date(today.getFullYear(),today.getMonth(),1);
+  const last =new Date(today.getFullYear(),today.getMonth()+1,0);
+  document.getElementById('rpt-from').value=first.toISOString().slice(0,10);
+  document.getElementById('rpt-to').value  =last.toISOString().slice(0,10);
+}
+function buildReport(){
+  const from=document.getElementById('rpt-from').value;
+  const to  =document.getElementById('rpt-to').value;
+  const rows=bookings.filter(b=>(!from||b.date>=from)&&(!to||b.date<=to));
+  const total=rows.length;
+  const done =rows.filter(r=>r.status==='done').length;
+  const rev  =rows.reduce((s,r)=>s+(r.price||0),0);
+  document.getElementById('rpt-summary').innerHTML=`
+    <div class="rs-card"><div class="rs-label">Total Bookings</div><div class="rs-value">${total}</div></div>
+    <div class="rs-card"><div class="rs-label">Completed</div><div class="rs-value">${done}</div></div>
+    <div class="rs-card"><div class="rs-label">Revenue (฿)</div><div class="rs-value">${rev.toLocaleString()}</div></div>
+  `;
+  document.getElementById('rpt-tbody').innerHTML=
+    rows.length ? rows.sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`
+      <tr>
+        <td>${b.date}</td><td>${b.time||''}</td>
+        <td>${b.pet_name||''}</td><td>${b.owner_name||''}</td>
+        <td>${b.service||''}</td><td>${b.groomer||'—'}</td>
+        <td><span class="badge badge-${b.status}">${b.status}</span></td>
+        <td>${b.price ? '฿'+b.price.toLocaleString() : '—'}</td>
+      </tr>`).join('') :
+    '<tr><td colspan="8" style="text-align:center;color:#94a3b8">No data</td></tr>';
+}
+function exportCSV(){
+  const from=document.getElementById('rpt-from').value;
+  const to  =document.getElementById('rpt-to').value;
+  const rows=bookings.filter(b=>(!from||b.date>=from)&&(!to||b.date<=to));
+  const hdr=['Date','Time','Pet','Owner','Phone','Service','Groomer','Status','Price'];
+  const csv=[hdr.join(','),...rows.map(b=>[
+    b.date,b.time,b.pet_name,b.owner_name,b.phone,b.service,b.groomer,b.status,b.price||0
+  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`bookings_${from}_${to}.csv`; a.click();
+}
+
+// ── INIT
+async function initAdmin(){groomers=loadGroomers();await loadBookings();buildAdminStats();renderCurrentView();refreshQbGroomerDropdown();}
+if(checkAuth()){initAdmin();}
+</script>
+</body>
+</html>
