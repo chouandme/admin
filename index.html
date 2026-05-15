@@ -1442,6 +1442,22 @@ function buildAdminStats(){
 // WEEKLY
 let weekDragId=null;
 function onWeekDragStart(e,id){weekDragId=id;e.dataTransfer.setData('bkId',id);}
+function calcWeekLanes(bks){
+  const bkLane={},bkTotal={},lanes=[];
+  bks.forEach(b=>{
+    const sp=pxFromOpen(b.startTime),ep=sp+(b.estimatedDurationMax||60)/30*SLOT_PX;
+    let l=0;while(l<lanes.length&&lanes[l]>sp+1)l++;
+    if(l>=lanes.length)lanes.push(0);
+    lanes[l]=ep;bkLane[b.id]=l;
+  });
+  bks.forEach(b=>{
+    const sp=pxFromOpen(b.startTime),ep=sp+(b.estimatedDurationMax||60)/30*SLOT_PX;
+    let max=bkLane[b.id]||0;
+    bks.forEach(o=>{if(o.id===b.id)return;const os=pxFromOpen(o.startTime),oe=os+(o.estimatedDurationMax||60)/30*SLOT_PX;if(sp<oe&&ep>os)max=Math.max(max,bkLane[o.id]||0);});
+    bkTotal[b.id]=max+1;
+  });
+  return{bkLane,bkTotal};
+}
 function renderWeekly(){
   const days=getWeekDates(adminWeekOffset),today=dateToStr(new Date()),colH=totalPx();
   // Gutter: identical to daily — one row per 30min, same height, same labels
@@ -1464,19 +1480,24 @@ function renderWeekly(){
     if(!isMon){
       if(!allBks.length)blocks=`<div class="week-no-result">ว่าง</div>`;
       else if(hasSearch&&!allBks.some(b=>matchesSearch(b)))blocks=`<div class="week-no-result">ไม่พบข้อมูล</div>`;
+      const{bkLane,bkTotal}=calcWeekLanes(allBks);
       allBks.forEach(b=>{
         const topPx=pxFromOpen(b.startTime),dur=b.estimatedDurationMax||60,hPx=Math.max(dur/30*SLOT_PX-3,22);
         const cls=STATUS_CLASS[b.status]||'st-waiting',matches=matchesSearch(b);
         const dim=hasSearch&&!matches?'opacity:0.2;filter:grayscale(60%)':'';
         const hl=hasSearch&&matches?' search-highlight':'';
         const badges=getBadgesHtml(b.phone);
-        blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${dim}"
+        const lane=bkLane[b.id]||0,tot=bkTotal[b.id]||1;
+        const lw=100/tot,ll=lane*lw;
+        const pos=tot>1?`left:calc(${ll}% + 2px);width:calc(${lw}% - 4px);`:'left:3px;right:3px;';
+        blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
           <div class="week-bk-title">${b.petName}</div>
           <div class="week-bk-sub">${b.customerName}</div>
           <div class="week-bk-time">${b.startTime}–${b.endTime||''}</div>
           ${badges?`<div>${badges}</div>`:''}
+          <div class="resize-handle resize-handle-bottom" data-resize="bottom" data-id="${b.id}" data-groomer="${b.groomerId||''}" onclick="event.stopPropagation()"></div>
         </div>`;
       });
     }
@@ -1497,6 +1518,7 @@ function renderWeekly(){
     </div>`;
   });
   document.getElementById('weeklyGridOuter').innerHTML=gutter+cols;
+  document.querySelectorAll('#weeklyGridOuter .resize-handle').forEach(el=>{el.addEventListener('mousedown',onResDown,false);el.addEventListener('touchstart',onResDown,{passive:false});});
   document.querySelectorAll('.week-col-body:not(.closed-body)').forEach(el=>{
     el.addEventListener('dragover',e=>{
       e.preventDefault();
@@ -1695,7 +1717,7 @@ function onResDown(e){
   const h=e.currentTarget,bk=bookings.find(b=>b.id===h.dataset.id);if(!bk)return;
   const{y}=evtXY(e);
   const endT=bk.endTime||calcEndTime(bk.startTime,bk.estimatedDurationMax);
-  ix={type:'resize',bkId:bk.id,groomer:h.dataset.groomer,edge:h.dataset.resize,startY:y,oSx:pxFromOpen(bk.startTime),oEx:pxFromOpen(endT),moved:false,ps:bk.startTime,pe:endT,pd:bk.estimatedDurationMax||60};
+  ix={type:'resize',bkId:bk.id,groomer:h.dataset.groomer,edge:h.dataset.resize,startY:y,oSx:pxFromOpen(bk.startTime),oEx:pxFromOpen(endT),moved:false,ps:bk.startTime,pe:endT,pd:bk.estimatedDurationMax||60,isWeekly:!!h.closest('#weeklyGridOuter')};
   document.addEventListener('mousemove',onResMove,false);document.addEventListener('mouseup',onResEnd,false);
   document.addEventListener('touchmove',onResMove,{passive:false});document.addEventListener('touchend',onResEnd,false);document.addEventListener('touchcancel',onResEnd,false);
 }
@@ -1710,6 +1732,8 @@ function onResMove(e){
   const ns=pxToTime(sx),ne=pxToTime(ex),nd=(ex-sx)/SLOT_PX*30;
   const el=document.querySelector(`.daily-bk-block[data-id="${ix.bkId}"]`);
   if(el){el.style.top=sx+'px';el.style.height=Math.max(ex-sx-4,26)+'px';const badge=el.querySelector('.daily-bk-time-badge');if(badge)badge.textContent=ns+'–'+ne;}
+  const wel=document.querySelector(`.week-bk-block[data-id="${ix.bkId}"]`);
+  if(wel){if(ix.edge==='top')wel.style.top=sx+'px';wel.style.height=Math.max(ex-sx-3,22)+'px';const wt=wel.querySelector('.week-bk-time');if(wt)wt.textContent=ns+'–'+ne;}
   ix.ps=ns;ix.pe=ne;ix.pd=nd;showTip(x,y,ns+'–'+ne);
 }
 function onResEnd(e){
@@ -1727,7 +1751,7 @@ function onResEnd(e){
         updateBooking(bk.id,{startTime:bk.startTime,endTime:bk.endTime,endTimeMin:bk.endTimeMin,endTimeMax:bk.endTimeMax,estimatedDurationMin:bk.estimatedDurationMin,estimatedDurationMax:bk.estimatedDurationMax});
         if(modalBkId===bk.id){const row=document.querySelector('#modalBody .modal-row:nth-child(3) .mv');if(row)row.textContent=bk.startTime+' – '+bk.endTime+' น.';}
         showToast('ปรับเวลาเรียบร้อยแล้ว ✓','success');renderCurrentView();buildAdminStats();
-      }else{showToast('ไม่สามารถปรับขนาดได้','error');renderDaily();}
+      }else{showToast('ไม่สามารถปรับขนาดได้','error');if(ix.isWeekly)renderWeekly();else renderDaily();}
     }
   }
   ix=null;
