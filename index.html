@@ -1499,8 +1499,8 @@ function buildAdminStats(){
 }
 
 // WEEKLY
-let weekDragId=null;
-function onWeekDragStart(e,id){weekDragId=id;e.dataTransfer.setData('bkId',id);}
+let weekDragId=null,weekDragOffsetY=0;
+function onWeekDragStart(e,id){weekDragId=id;weekDragOffsetY=e.offsetY||0;e.dataTransfer.setData('bkId',id);}
 
 // Returns {left,right,width,zIndex} for a booking block in the weekly view
 // Rule 1: no overlap → full width
@@ -1612,7 +1612,7 @@ function renderWeekly(){
       e.preventDefault();
       const id=weekDragId;if(!id)return;
       const bk=bookings.find(b=>b.id===id);if(!bk)return;
-      const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top;
+      const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top-weekDragOffsetY;
       const snapped=Math.max(0,Math.min(totalPx()-bk.estimatedDurationMax/30*SLOT_PX,snapPx(rawPx)));
       el.style.background='rgba(160,185,149,.08)';
       const ghost=document.getElementById('wghost-'+el.dataset.date);
@@ -1638,7 +1638,7 @@ function renderWeekly(){
       const newDate=el.dataset.date;
       if(new Date(newDate+'T12:00:00').getDay()===1){showToast('วันจันทร์ร้านปิด','error');return;}
       const bk=bookings.find(b=>b.id===id);if(!bk)return;
-      const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top;
+      const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top-weekDragOffsetY;
       const snapped=Math.max(0,Math.min(totalPx()-bk.estimatedDurationMax/30*SLOT_PX,snapPx(rawPx)));
       const newTime=pxToTime(snapped);
       const dur=bk.estimatedDurationMax||60;
