@@ -1501,16 +1501,13 @@ function renderWeekly(){
         </div>`;
       });
     }
-    // Capacity heat map: shade column based on number of bookings vs groomer capacity
-    const dayTotal=allBks.length;
-    const heatBg=isMon?'':(dayTotal===0?'rgba(160,185,149,.06)':dayTotal===1?'rgba(242,247,205,.5)':dayTotal>=4?'rgba(240,120,120,.07)':'rgba(232,181,75,.07)');
 
     cols+=`<div class="week-col">
       <div class="week-col-header${isToday?' today-col':''}${isMon?' closed-col':''}">
         <div class="wch-day">${THAI_DOW[dow]}</div><div class="wch-date">${d.getDate()}</div>
         ${isMon?'<div class="wch-closed">ปิด</div>':''}
       </div>
-      <div class="week-col-body${isMon?' closed-body':''}" data-date="${ds}" style="height:${colH}px;position:relative;overflow:hidden;background:${heatBg}">
+      <div class="week-col-body${isMon?' closed-body':''}" data-date="${ds}" style="height:${colH}px;position:relative;overflow:hidden">
         ${isMon?'':(lines+blocks+buildTimeLineHtml(ds))}
         ${isMon?'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:#c0a0a0;text-align:center">ปิดทำการ</div>':''}
         <div class="drop-preview" id="wghost-${ds}" style="display:none"></div>
@@ -1610,22 +1607,16 @@ function renderDaily(){
     }
     let lines='';
     for(let i=0;i<(HOUR_END-HOUR_START)*2;i++){
-      const load=slotLoad(i);
-      const heatBg=load===0?'':(load===1?'rgba(232,181,75,.12)':'rgba(240,100,100,.14)');
-      const heatStyle=heatBg?`background:${heatBg};`:'';
-      lines+=`<div class="daily-slot-bg${i%2===1?' hour-mark':''}" style="top:${i*SLOT_PX}px;${heatStyle}"></div>`;
+      lines+=`<div class="daily-slot-bg${i%2===1?' hour-mark':''}" style="top:${i*SLOT_PX}px"></div>`;
     }
     let blocks='';
     bks.forEach(b=>{
       const top=pxFromOpen(b.startTime),dur=b.estimatedDurationMax||60,h=Math.max(dur/30*SLOT_PX-4,26);
-      const buf=calcBuffer(b);
-      const bufH=buf>0?Math.round(buf/30*SLOT_PX):0;
       const cls=STATUS_CLASS[b.status]||'st-waiting',matches=matchesSearch(b);
       const hl=searchQuery&&matches?' search-highlight':'';
       const dim=searchQuery&&!matches?'opacity:0.2;filter:grayscale(60%);':'';
       const badges=getBadgesHtml(b.phone);
-      const bufStrip=buf>0?`<div style="position:absolute;left:3px;right:3px;top:${top+h+4}px;height:${bufH}px;background:rgba(160,114,85,.10);border-radius:0 0 8px 8px;pointer-events:none;z-index:2;border-top:1px dashed rgba(160,114,85,.3)"></div>`:'';
-      blocks+=`${bufStrip}<div class="daily-bk-block ${cls}${hl}" data-id="${b.id}" data-groomer="${groomer}" style="top:${top}px;height:${h}px;${dim}">
+      blocks+=`<div class="daily-bk-block ${cls}${hl}" data-id="${b.id}" data-groomer="${groomer}" style="top:${top}px;height:${h}px;${dim}">
         <div class="resize-handle resize-handle-top" data-resize="top" data-id="${b.id}" data-groomer="${groomer}"></div>
         <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
         <div class="daily-bk-title">${b.petName} · ${b.customerName}</div>
@@ -1956,7 +1947,6 @@ function openModal(id){
   const groomerLbl=getGroomerName(bk.groomerId);
   const dateDisp=bk.date?new Date(bk.date+'T12:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'–';
   const endDisp=bk.endTimeMin&&bk.endTimeMax&&bk.endTimeMin!==bk.endTimeMax?`${bk.endTimeMin}–${bk.endTimeMax}`:(bk.endTime||'');
-  const buf=calcBuffer(bk);
   document.getElementById('modalBody').innerHTML=`
     <div class="modal-row"><span class="ml">วันที่</span><span class="mv">${dateDisp}</span></div>
     <div class="modal-row"><span class="ml">ช่าง</span><span class="mv">${groomerLbl}</span></div>
@@ -1966,7 +1956,6 @@ function openModal(id){
     <div class="modal-row"><span class="ml">บริการ</span><span class="mv">${bk.service}</span></div>
     <div class="modal-row"><span class="ml">บริการเสริม</span><span class="mv">${addonStr}</span></div>
     <div class="modal-row"><span class="ml">ราคาประมาณ</span><span class="mv">${priceStr}</span></div>
-    ${buf>0?`<div class="modal-row"><span class="ml">Buffer time</span><span class="mv" style="color:var(--brown);font-weight:700">+${buf} นาที</span></div>`:''}
     ${bk.notes?`<div class="modal-row"><span class="ml">หมายเหตุ</span><span class="mv">${bk.notes}</span></div>`:''}`;
   const stRow=document.getElementById('statusToggleRow');
   stRow.innerHTML=STATUSES.map(s=>`<button class="status-toggle-btn ${s==='รอยืนยัน'?'waiting':'confirmed'}${bk.status===s?' active':''}" onclick="setStatus('${s}')">${s==='รอยืนยัน'?'⏳':'✅'} ${s}</button>`).join('');
