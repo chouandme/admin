@@ -1929,9 +1929,14 @@ function copyLineMsg(){
     try{document.execCommand('copy');showToast('คัดลอกข้อความแล้ว ✓','success');}catch(e){showToast('กรุณาคัดลอกด้วยตนเอง');}
   }
 }
+const LINE_OA_URL='https://chat.line.biz/';
+function openLineOA(){
+  if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)){window.location.href=LINE_OA_URL;}
+  else{window.open(LINE_OA_URL,'_blank');}
+}
 function openLineApp(){
   copyLineMsg();
-  window.open('https://chat.line.biz/','_blank');
+  openLineOA();
 }
 function closeLineMsg(e){
   if(e&&e.target!==document.getElementById('lineMsgOverlay'))return;
@@ -1941,7 +1946,7 @@ function closeLineMsg(e){
 // CALL / LINE
 function callCustomer(){const bk=bookings.find(b=>b.id===modalBkId);if(!bk||!bk.phone){showToast('ไม่มีเบอร์โทร','error');return;}window.location.href='tel:'+bk.phone.replace(/[^0-9+]/g,'');}
 function openLine(){
-  window.open('https://chat.line.biz/','_blank');
+  openLineOA();
 }
 
 // CUSTOMER HISTORY
