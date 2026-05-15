@@ -1470,11 +1470,13 @@ function calcWeekLanes(bks){
     if(l>=lanes.length)lanes.push(0);
     lanes[l]=ep;bkLane[b.id]=l;
   });
+  const maxLane=gs.length-1;
   bks.forEach(b=>{
+    bkLane[b.id]=Math.min(bkLane[b.id]||0,maxLane);
     const sp=pxFromOpen(b.startTime),ep=sp+(b.estimatedDurationMax||60)/30*SLOT_PX;
     let max=bkLane[b.id]||0;
     bks.forEach(o=>{if(o.id===b.id)return;const os=pxFromOpen(o.startTime),oe=os+(o.estimatedDurationMax||60)/30*SLOT_PX;if(sp<oe&&ep>os)max=Math.max(max,bkLane[o.id]||0);});
-    bkTotal[b.id]=max+1;
+    bkTotal[b.id]=Math.min(max+1,gs.length);
   });
   return{bkLane,bkTotal};
 }
@@ -1576,7 +1578,7 @@ function renderWeekly(){
       const dur=bk.estimatedDurationMax||60;
       const gs=loadGroomers();
       const ordG=[gs.find(g=>g.id===bk.groomerId),...gs.filter(g=>g.id!==bk.groomerId)].filter(Boolean);
-      const freeG=ordG.find(g=>!bookings.some(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&(b.groomerId===g.id||(!b.groomerId&&g.id===gs[0]?.id))&&overlapsAdmin(b.startTime,effectiveDuration(b),newTime,dur)));
+      const freeG=ordG.find(g=>!bookings.some(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&(b.groomerId===g.id||(!b.groomerId&&g.id===gs[0]?.id))&&overlapsAdmin(b.startTime,b.estimatedDurationMax||60,newTime,dur)));
       if(freeG){
         bk.date=newDate;bk.startTime=newTime;bk.endTime=calcEndTime(newTime,dur);bk.groomerId=freeG.id;
         updateBooking(bk.id,{date:bk.date,startTime:bk.startTime,endTime:bk.endTime,groomerId:bk.groomerId});
@@ -1695,7 +1697,7 @@ function evtXY(e){if(e.touches&&e.touches.length>0)return{x:e.touches[0].clientX
 function getColRect(g){const c=document.getElementById('col-'+g);return c?c.getBoundingClientRect():null;}
 function groomerAt(cx){for(const g of groomers){const r=getColRect(g.id);if(r&&cx>=r.left&&cx<=r.right)return g.id;}return null;}
 function canGroomer(g,t,d,ex){return!getGroomerBks(g).some(b=>b.id!==ex&&overlaps(b.startTime,effectiveDuration(b),t,d));}
-function canGroomerAdmin(g,t,d,ex){return!getGroomerBks(g).some(b=>b.id!==ex&&overlapsAdmin(b.startTime,effectiveDuration(b),t,d));}
+function canGroomerAdmin(g,t,d,ex){return!getGroomerBks(g).some(b=>b.id!==ex&&overlapsAdmin(b.startTime,b.estimatedDurationMax||60,t,d));}
 function setGhost(g,top,h,show,ok){const el=document.getElementById('ghost-'+g);if(!el)return;el.style.display=show?'block':'none';el.style.top=top+'px';el.style.height=Math.max(h,10)+'px';el.style.background=ok?'rgba(160,185,149,.4)':'rgba(240,120,120,.3)';el.style.borderColor=ok?'var(--sage)':'#e07070';}
 function clearGhosts(){groomers.forEach(g=>{setGhost(g.id,0,0,false,true);const hdr=document.getElementById('hdr-'+g.id);if(hdr)hdr.classList.remove('drag-target');const col=document.getElementById('col-'+g.id);if(col)col.classList.remove('drag-active');});}
 function attachDailyEvents(){
