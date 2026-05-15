@@ -1472,13 +1472,11 @@ function calcWeekLanes(bks){
     if(l>=lanes.length)lanes.push(0);
     lanes[l]=ep;bkLane[b.id]=l;
   });
-  const maxLane=gs.length-1;
   bks.forEach(b=>{
-    bkLane[b.id]=Math.min(bkLane[b.id]||0,maxLane);
     const sp=pxFromOpen(b.startTime),ep=sp+(b.estimatedDurationMax||60)/30*SLOT_PX;
     let max=bkLane[b.id]||0;
     bks.forEach(o=>{if(o.id===b.id)return;const os=pxFromOpen(o.startTime),oe=os+(o.estimatedDurationMax||60)/30*SLOT_PX;if(sp<oe&&ep>os)max=Math.max(max,bkLane[o.id]||0);});
-    bkTotal[b.id]=Math.min(max+1,gs.length);
+    bkTotal[b.id]=max+1;
   });
   return{bkLane,bkTotal};
 }
