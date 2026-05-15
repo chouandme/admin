@@ -698,6 +698,21 @@ function loadGroomers(){
 function saveGroomersToStorage(groomers){
   try{localStorage.setItem(GROOMERS_KEY,JSON.stringify(groomers));}catch(e){}
 }
+async function loadGroomersFromSupabase(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/groomers?select=id,name,sort_order&order=sort_order.asc',{headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_TOKEN}});
+    if(!r.ok)return null;
+    const gs=await r.json();
+    return Array.isArray(gs)&&gs.length?gs.map(g=>({id:g.id,name:g.name})):null;
+  }catch(e){return null;}
+}
+async function saveGroomersToSupabase(gs){
+  if(!SB_TOKEN||SB_TOKEN===SB_ANON)return;
+  const h={apikey:SB_ANON,Authorization:'Bearer '+SB_TOKEN,'Content-Type':'application/json'};
+  const ids=gs.map(g=>g.id);
+  if(ids.length)await fetch(`${SB_URL}/rest/v1/groomers?id=not.in.(${ids.join(',')})`,{method:'DELETE',headers:{...h,Prefer:'return=minimal'}}).catch(()=>{});
+  if(gs.length)await fetch(`${SB_URL}/rest/v1/groomers`,{method:'POST',headers:{...h,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(gs.map((g,i)=>({id:g.id,name:g.name,sort_order:i})))});
+}
 // Live groomers array — always call loadGroomers() to get fresh
 let groomers=loadGroomers();
 
@@ -816,18 +831,19 @@ function doRemoveGroomer(id){
   saveToStorage();
   groomers=groomers.filter(g=>g.id!==id);
   saveGroomersToStorage(groomers);
+  saveGroomersToSupabase(groomers);
   renderGmList();
   refreshQbGroomerDropdown();
   renderCurrentView(); buildAdminStats();
   showToast('ลบช่างเรียบร้อยแล้ว','success');
 }
 function saveGroomers(){
-  // Collect current names from inputs in the list
   document.querySelectorAll('#gmList input[data-id]').forEach(inp=>{
     const g=groomers.find(g=>g.id===inp.dataset.id);
     if(g&&inp.value.trim())g.name=inp.value.trim();
   });
   saveGroomersToStorage(groomers);
+  saveGroomersToSupabase(groomers);
   refreshQbGroomerDropdown();
   document.getElementById('gmOverlay').classList.add('hidden');
   showToast('บันทึกข้อมูลช่างเรียบร้อยแล้ว ✓','success');
@@ -2130,7 +2146,12 @@ let toastTimer;
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',2800);}
 
 // INIT
-async function initAdmin(){groomers=loadGroomers();await loadBookings();buildAdminStats();renderCurrentView();refreshQbGroomerDropdown();}
+async function initAdmin(){
+  groomers=loadGroomers();
+  const sbGs=await loadGroomersFromSupabase();
+  if(sbGs&&sbGs.length){groomers=sbGs;saveGroomersToStorage(groomers);}
+  await loadBookings();buildAdminStats();renderCurrentView();refreshQbGroomerDropdown();
+}
 if(checkAuth()){initAdmin();}
 </script>
 </body>
