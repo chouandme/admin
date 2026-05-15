@@ -1554,8 +1554,8 @@ function renderWeekly(){
         if(existing.length>0){
           const gs2=loadGroomers(),gOrd2={};gs2.forEach((g,i)=>{gOrd2[g.id]=i;});
           const all=[...existing,bk].sort((a,b)=>{const ao=gOrd2[a.groomerId]??999,bo=gOrd2[b.groomerId]??999;return ao!==bo?ao-bo:(a.startTime||'').localeCompare(b.startTime||'');});
-          const lane=all.findIndex(b=>b.id===bk.id),tot=all.length;
-          const lw=100/tot,ll=lane*lw;
+          const lane=all.findIndex(b=>b.id===bk.id),tot=Math.min(all.length,gs2.length);
+          const lw=100/tot,ll=Math.min(lane,tot-1)*lw;
           ghost.style.left=`calc(${ll}% + 2px)`;ghost.style.width=`calc(${lw}% - 4px)`;ghost.style.right='auto';
         }else{
           ghost.style.left='3px';ghost.style.right='3px';ghost.style.width='auto';
