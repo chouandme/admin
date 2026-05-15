@@ -457,13 +457,6 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 .line-msg-copy:hover{background:#8a6145;}
 .line-msg-open{background:#06C755;color:#fff;border:none;border-radius:var(--radius-pill);padding:12px;font-family:'Quicksand',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
 .line-msg-close-btn{background:var(--cream);color:var(--text-mid);border:2px solid var(--sand);border-radius:var(--radius-pill);padding:12px;font-family:'Quicksand',sans-serif;font-size:14px;font-weight:700;cursor:pointer;grid-column:1/-1;}
-.line-msg-send{background:#1a6ff0;color:#fff;border:none;border-radius:var(--radius-pill);padding:12px;font-family:'Quicksand',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;grid-column:1/-1;}
-.line-msg-send:hover:not(:disabled){background:#1558c8;}
-.line-msg-send:disabled{background:#b0c4de;cursor:default;}
-.line-id-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--sand);}
-.line-id-input{flex:1;border:1.5px solid var(--sand);border-radius:10px;padding:5px 8px;font-size:12px;font-family:'Mitr',sans-serif;color:var(--text-dark);background:var(--cream);outline:none;min-width:0;}
-.line-id-input:focus{border-color:var(--brown);}
-.line-id-save-btn{background:var(--brown);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-family:'Quicksand',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -680,7 +673,6 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
     </div>
     <textarea class="line-msg-text" id="lineMsgText" rows="5" readonly></textarea>
     <div class="line-msg-btns">
-      <button id="lineMsgSendBtn" class="line-msg-send" onclick="sendLinePush()" style="display:none" disabled>📤 ส่งผ่าน LINE</button>
       <button class="line-msg-copy" onclick="copyLineMsg()">📋 คัดลอกข้อความ</button>
       <button class="line-msg-open" onclick="openLineApp()">💬 เปิด LINE</button>
       <button class="line-msg-close-btn" onclick="closeLineMsg(null)">ปิด</button>
@@ -911,10 +903,6 @@ if(checkAuth()){document.getElementById('loginScreen').style.display='none';docu
 const SB_URL = 'https://qlyyeetzvtegbgasmmmb.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFseXllZXR6dnRlZ2JnYXNtbW1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNTA1MjMsImV4cCI6MjA5MzgyNjUyM30.nryBXiYnGTPNpAAEPOdqRExVDd3IeT4S0vAiZ1sHkkg';
 
-// ── LINE MESSAGING CONFIG ───────────────────
-// Set to your Make.com/n8n webhook URL that accepts {userId, message} and calls LINE push API
-// Payload sent: { "userId": "Uxxxx...", "message": "ข้อความ..." }
-const LINE_WEBHOOK_URL = '';
 
 // Auth token — restored from session if available, otherwise anon
 let SB_TOKEN = (()=>{try{return sessionStorage.getItem('sb_token')||SB_ANON;}catch(e){return SB_ANON;}})();
@@ -952,7 +940,6 @@ function toRow(bk){
     groomer_id:             bk.groomerId      || 'groomer1',
     status:                 bk.status         || 'รอยืนยัน',
     notes:                  bk.notes          || '',
-    line_id:                bk.lineId         || '',
     created_at:             bk.createdAt      || new Date().toISOString()
   };
 }
@@ -982,7 +969,6 @@ function fromRow(row){
     groomerId:            row.groomer_id             || 'groomer1',
     status:               row.status                 || 'รอยืนยัน',
     notes:                row.notes                  || '',
-    lineId:               row.line_id                || '',
     createdAt:            row.created_at             || ''
   };
 }
@@ -997,7 +983,7 @@ const FIELD_MAP = {
   estimatedDurationMin:'estimated_duration_min', estimatedDurationMax:'estimated_duration_max',
   date:'date', startTime:'start_time',
   endTimeMin:'end_time_min', endTimeMax:'end_time_max', endTime:'end_time',
-  groomerId:'groomer_id', status:'status', notes:'notes', lineId:'line_id'
+  groomerId:'groomer_id', status:'status', notes:'notes'
 };
 
 // ── DATA STATE ─────────────────────────────
@@ -1916,37 +1902,15 @@ function buildMsg(bk,type){
   return'';
 }
 
-let lineIdChanged=false;
-function saveLineId(){
-  const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
-  const val=(document.getElementById('lineIdInput').value||'').trim();
-  bk.lineId=val;
-  updateBooking(bk.id,{lineId:val});
-  lineIdChanged=false;
-  showToast('บันทึก LINE User ID แล้ว ✓','success');
-}
-
-function updateLineSendBtn(bk){
-  const sendBtn=document.getElementById('lineMsgSendBtn');if(!sendBtn)return;
-  const hasWebhook=!!LINE_WEBHOOK_URL;
-  const hasUserId=!!(bk&&bk.lineId&&bk.lineId.trim());
-  sendBtn.style.display=hasWebhook?'':'none';
-  sendBtn.disabled=!hasUserId;
-  sendBtn.title=!hasWebhook?'ยังไม่ได้ตั้งค่า Webhook URL':hasUserId?'ส่งข้อความผ่าน LINE API โดยตรง':'ยังไม่ได้ระบุ LINE User ID ในข้อมูลการจอง';
-}
-
 function openLineMsg(type){
   const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
-  // Sync in-memory lineId from input if admin edited it but didn't save
-  const inp=document.getElementById('lineIdInput');
-  if(inp&&lineIdChanged){bk.lineId=(inp.value||'').trim();}
   lineMsgBkId=modalBkId; currentMsgType=type;
+  // Set active tab
   document.querySelectorAll('.line-msg-tab').forEach(t=>{
     const tabType=t.getAttribute('onclick').match(/'(\w+)'/)?.[1];
     t.classList.toggle('active',tabType===type);
   });
   document.getElementById('lineMsgText').value=buildMsg(bk,type);
-  updateLineSendBtn(bk);
   document.getElementById('lineMsgOverlay').classList.remove('hidden');
 }
 function switchMsgTab(type,btn){
@@ -1955,22 +1919,6 @@ function switchMsgTab(type,btn){
   btn.classList.add('active');
   const bk=bookings.find(b=>b.id===lineMsgBkId);
   if(bk)document.getElementById('lineMsgText').value=buildMsg(bk,type);
-}
-
-async function sendLinePush(){
-  const bk=bookings.find(b=>b.id===lineMsgBkId);if(!bk)return;
-  const userId=(bk.lineId||'').trim();
-  if(!userId){showToast('ยังไม่ได้ระบุ LINE User ID','error');return;}
-  if(!LINE_WEBHOOK_URL){showToast('ยังไม่ได้ตั้งค่า LINE_WEBHOOK_URL','error');return;}
-  const msg=document.getElementById('lineMsgText').value;
-  const btn=document.getElementById('lineMsgSendBtn');
-  if(btn){btn.disabled=true;btn.textContent='กำลังส่ง...';}
-  try{
-    const r=await fetch(LINE_WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId,message:msg})});
-    if(r.ok){showToast('ส่งข้อความ LINE แล้ว ✓','success');closeLineMsg(null);}
-    else{showToast('ส่งไม่สำเร็จ ('+r.status+') — โปรดลองใหม่','error');}
-  }catch(e){showToast('เกิดข้อผิดพลาด: '+e.message,'error');}
-  finally{if(btn){btn.disabled=false;btn.textContent='📤 ส่งผ่าน LINE';updateLineSendBtn(bk);}}
 }
 function copyLineMsg(){
   const txt=document.getElementById('lineMsgText').value;
@@ -2086,11 +2034,6 @@ function openModal(id){
     <div class="modal-row"><span class="ml">ช่าง</span><span class="mv">${groomerLbl}</span></div>
     <div class="modal-row"><span class="ml">เวลา</span><span class="mv">${bk.startTime} – ${endDisp} น.</span></div>
     <div class="modal-row"><span class="ml">เบอร์โทร</span><span class="mv">${bk.phone||'–'}</span></div>
-    <div class="line-id-row">
-      <span class="ml" style="flex-shrink:0;font-size:12px;color:var(--text-mid);min-width:70px">LINE User ID</span>
-      <input class="line-id-input" id="lineIdInput" type="text" value="${bk.lineId||''}" placeholder="Uxxxxxxxxxxxx..." oninput="lineIdChanged=true">
-      <button class="line-id-save-btn" onclick="saveLineId()">บันทึก</button>
-    </div>
     <div class="modal-row"><span class="ml">น้ำหนัก / ขน</span><span class="mv">${bk.weightRange||'–'} · ${bk.coatType||'–'}</span></div>
     <div class="modal-row"><span class="ml">บริการ</span><span class="mv">${bk.service}</span></div>
     <div class="modal-row"><span class="ml">บริการเสริม</span><span class="mv">${addonStr}</span></div>
