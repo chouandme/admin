@@ -1930,13 +1930,8 @@ function copyLineMsg(){
   }
 }
 function openLineApp(){
-  const bk=bookings.find(b=>b.id===lineMsgBkId);
-  if(bk&&bk.lineId&&bk.lineId.trim()){
-    window.open('https://line.me/R/ti/p/~'+encodeURIComponent(bk.lineId.trim()),'_blank');
-  } else {
-    copyLineMsg();
-    showToast('คัดลอกข้อความแล้ว — กรุณาเปิด LINE และวางข้อความ');
-  }
+  copyLineMsg();
+  window.open('https://line.me/R/ti/p/@109gxmsk','_blank');
 }
 function closeLineMsg(e){
   if(e&&e.target!==document.getElementById('lineMsgOverlay'))return;
@@ -1946,10 +1941,7 @@ function closeLineMsg(e){
 // CALL / LINE
 function callCustomer(){const bk=bookings.find(b=>b.id===modalBkId);if(!bk||!bk.phone){showToast('ไม่มีเบอร์โทร','error');return;}window.location.href='tel:'+bk.phone.replace(/[^0-9+]/g,'');}
 function openLine(){
-  const bk=bookings.find(b=>b.id===modalBkId);if(!bk){showToast('ไม่พบข้อมูล','error');return;}
-  if(bk.lineId&&bk.lineId.trim()){window.open('https://line.me/R/ti/p/~'+encodeURIComponent(bk.lineId.trim()),'_blank');}
-  else if(bk.phone){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(bk.phone).then(()=>showToast('ยังไม่ได้ระบุ LINE — คัดลอกเบอร์โทรแล้ว')).catch(()=>showToast('เบอร์: '+bk.phone));}else{showToast('ยังไม่ได้ระบุ LINE — เบอร์: '+bk.phone);}}
-  else{showToast('ยังไม่ได้ระบุ LINE');}
+  window.open('https://line.me/R/ti/p/@109gxmsk','_blank');
 }
 
 // CUSTOMER HISTORY
