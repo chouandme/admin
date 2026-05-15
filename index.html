@@ -699,6 +699,7 @@ function saveGroomersToStorage(groomers){
   try{localStorage.setItem(GROOMERS_KEY,JSON.stringify(groomers));}catch(e){}
 }
 async function loadGroomersFromSupabase(){
+  if(!SB_TOKEN||SB_TOKEN===SB_ANON)return null;
   try{
     const r=await fetch(SB_URL+'/rest/v1/groomers?select=id,name,sort_order&order=sort_order.asc',{headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_TOKEN}});
     if(!r.ok)return null;
@@ -1017,6 +1018,7 @@ async function loadBookings(){
       SB_URL + '/rest/v1/bookings?select=*&order=date.asc,start_time.asc',
       { headers: sbHeaders({'Prefer':''}) }
     );
+    if(res.status===401){SB_TOKEN=SB_ANON;try{sessionStorage.removeItem('sb_token');}catch(e){}throw new Error('HTTP 401 — session expired, please log in again');}
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     bookings.length = 0;
@@ -1495,15 +1497,6 @@ function renderWeekly(){
     const allBks=bookings.filter(b=>b.date===ds&&b.status!=='ยกเลิก').sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
     const hasSearch=searchQuery.length>0;
     // Slot lines: identical to daily — border-bottom, i%2===1 = hour mark
-    // Lane calculation for overlapping bookings within this column
-    const colSorted=[...bks].sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
-    const colLane={},colLanes=[];
-    colSorted.forEach(b=>{
-      const sp=pxFromOpen(b.startTime),ep=sp+(b.estimatedDurationMax||60)/30*SLOT_PX;
-      let l=0;while(l<colLanes.length&&colLanes[l]>sp+1)l++;
-      if(l>=colLanes.length)colLanes.push(0);
-      colLanes[l]=ep;colLane[b.id]=l;
-    });
     let lines='';
     for(let i=0;i<(HOUR_END-HOUR_START)*2;i++)
       lines+=`<div class="week-slot-line${i%2===0?'':' hour'}" style="top:${i*SLOT_PX}px"></div>`;
@@ -1655,6 +1648,15 @@ function renderDaily(){
         return bs<slotEnd&&be>slotStart;
       }).length;
     }
+    // Lane calc for overlapping bookings within this groomer column
+    const colSorted=[...bks].sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+    const colLane={},colLanes=[];
+    colSorted.forEach(b=>{
+      const sp=pxFromOpen(b.startTime),ep=sp+(b.estimatedDurationMax||60)/30*SLOT_PX;
+      let l=0;while(l<colLanes.length&&colLanes[l]>sp+1)l++;
+      if(l>=colLanes.length)colLanes.push(0);
+      colLanes[l]=ep;colLane[b.id]=l;
+    });
     let lines='';
     for(let i=0;i<(HOUR_END-HOUR_START)*2;i++){
       lines+=`<div class="daily-slot-bg${i%2===1?' hour-mark':''}" style="top:${i*SLOT_PX}px"></div>`;
