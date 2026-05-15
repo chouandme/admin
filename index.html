@@ -1898,10 +1898,15 @@ function getCustomerHistory(bk){
   return bookings.filter(b=>b.id!==bk.id&&b.status!=='ยกเลิก'&&((b.phone&&bk.phone&&b.phone===bk.phone)||(b.customerName===bk.customerName&&b.petName===bk.petName))).sort((a,b)=>(b.date+b.startTime).localeCompare(a.date+a.startTime));
 }
 function buildHistorySection(bk){
-  const hist=getCustomerHistory(bk),el=document.getElementById('historySection');
+  const allHist=getCustomerHistory(bk),el=document.getElementById('historySection');
   const flags=getCustomerFlags(bk.phone);
   const allBks=getAllCustomerBookings(bk);
   const cancelledCount=allBks.filter(b=>b.status==='ยกเลิก').length;
+  const today=dateToStr(new Date());
+
+  // Past visits only (today or before), strictly max 5
+  const hist=allHist.filter(b=>b.date<=today);
+  const recent=hist.slice(0,5);
 
   const flagHtml=(flags.noshow||flags.late||flags.cancel||cancelledCount)
     ?`<div style="margin-bottom:8px">${flags.noshow?`<span class="bk-badge noshow">⚠️ No-show ${flags.noshow} ครั้ง</span>`:''}${flags.late?`<span class="bk-badge late">⏰ มาสาย ${flags.late} ครั้ง</span>`:''}${flags.cancel?`<span class="bk-badge cancel">↩ ยกเลิก ${flags.cancel} ครั้ง</span>`:''}${cancelledCount?`<span class="bk-badge cancel">ยกเลิกคิว ${cancelledCount} ครั้ง</span>`:''}</div>`:'';
@@ -1911,7 +1916,7 @@ function buildHistorySection(bk){
     return;
   }
 
-  const rows=hist.slice(0,5).map(b=>{
+  const rows=recent.map(b=>{
     const dateStr=b.date?new Date(b.date+'T12:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}):'–';
     const groomer=getGroomerName(b.groomerId)||'–';
     const addons=(b.addOns&&b.addOns.length)?b.addOns.join(', '):'–';
@@ -1930,8 +1935,24 @@ function buildHistorySection(bk){
     </div>`;
   }).join('');
 
+  // Most-picked tags computed from full history
+  const svcCount={};
+  allHist.forEach(b=>{if(b.service)svcCount[b.service]=(svcCount[b.service]||0)+1;});
+  const topSvc=Object.entries(svcCount).sort((a,b)=>b[1]-a[1]).slice(0,1).map(([k])=>k);
+  const addonCount={};
+  allHist.forEach(b=>(b.addOns||[]).forEach(a=>{addonCount[a]=(addonCount[a]||0)+1;}));
+  const topAddons=Object.entries(addonCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
+
+  const tagsHtml=(topSvc.length||topAddons.length)?`<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--sand)">
+    <div style="font-size:10px;color:var(--slate);font-weight:600;letter-spacing:.4px;margin-bottom:5px">มักเลือก</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${topSvc.map(s=>`<span style="background:var(--brown);color:#fff;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600">${s}</span>`).join('')}
+      ${topAddons.map(a=>`<span style="background:var(--sage);color:#fff;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600">+ ${a}</span>`).join('')}
+    </div>
+  </div>`:'';
+
   el.innerHTML=`<div class="history-title">📋 ประวัติการใช้บริการ (${hist.length} ครั้ง)</div>
-    ${flagHtml}${rows}`;
+    ${flagHtml}${rows}${tagsHtml}`;
 }
 
 // MODAL
