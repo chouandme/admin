@@ -1511,8 +1511,9 @@ function renderWeekly(){
         const badges=getBadgesHtml(b.phone);
         const lane=bkLane[b.id]||0,tot=bkTotal[b.id]||1;
         const lw=100/tot,ll=lane*lw;
+        const off=tot>1?lane*10:0;
         const pos=tot>1?`left:calc(${ll}% + 2px);width:calc(${lw}% - 4px);`:'left:3px;right:3px;';
-        blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
+        blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx+off}px;height:${Math.max(hPx-off,22)}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
           <div class="week-bk-title">${b.petName}</div>
