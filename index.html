@@ -1931,7 +1931,7 @@ function copyLineMsg(){
 }
 function openLineApp(){
   copyLineMsg();
-  window.open('https://line.me/R/ti/p/@109gxmsk','_blank');
+  window.open('https://manager.line.biz/','_blank');
 }
 function closeLineMsg(e){
   if(e&&e.target!==document.getElementById('lineMsgOverlay'))return;
@@ -1941,7 +1941,7 @@ function closeLineMsg(e){
 // CALL / LINE
 function callCustomer(){const bk=bookings.find(b=>b.id===modalBkId);if(!bk||!bk.phone){showToast('ไม่มีเบอร์โทร','error');return;}window.location.href='tel:'+bk.phone.replace(/[^0-9+]/g,'');}
 function openLine(){
-  window.open('https://line.me/R/ti/p/@109gxmsk','_blank');
+  window.open('https://manager.line.biz/','_blank');
 }
 
 // CUSTOMER HISTORY
