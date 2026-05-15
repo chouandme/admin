@@ -1903,37 +1903,35 @@ function buildHistorySection(bk){
   const allBks=getAllCustomerBookings(bk);
   const cancelledCount=allBks.filter(b=>b.status==='ยกเลิก').length;
 
+  const flagHtml=(flags.noshow||flags.late||flags.cancel||cancelledCount)
+    ?`<div style="margin-bottom:8px">${flags.noshow?`<span class="bk-badge noshow">⚠️ No-show ${flags.noshow} ครั้ง</span>`:''}${flags.late?`<span class="bk-badge late">⏰ มาสาย ${flags.late} ครั้ง</span>`:''}${flags.cancel?`<span class="bk-badge cancel">↩ ยกเลิก ${flags.cancel} ครั้ง</span>`:''}${cancelledCount?`<span class="bk-badge cancel">ยกเลิกคิว ${cancelledCount} ครั้ง</span>`:''}</div>`:'';
+
   if(!hist.length&&!flags.noshow&&!flags.late&&!flags.cancel&&!cancelledCount){
     el.innerHTML=`<div class="history-title">📋 ประวัติการใช้บริการ</div><div class="history-empty">ยังไม่มีประวัติการใช้บริการ</div>`;
     return;
   }
-  const count=hist.length;
-  const avgDur=count?Math.round(hist.reduce((a,b)=>a+(b.estimatedDurationMax||60),0)/count):0;
-  const lastDate=hist.length?new Date(hist[0].date+'T12:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}):'–';
-  const addonCount={};hist.forEach(b=>(b.addOns||[]).forEach(a=>{addonCount[a]=(addonCount[a]||0)+1;}));
-  const topAddons=Object.entries(addonCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
 
-  // Most common service
-  const svcCount={};hist.forEach(b=>{if(b.service)svcCount[b.service]=(svcCount[b.service]||0)+1;});
-  const topSvc=Object.entries(svcCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'–';
+  const rows=hist.slice(0,5).map(b=>{
+    const dateStr=b.date?new Date(b.date+'T12:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}):'–';
+    const groomer=getGroomerName(b.groomerId)||'–';
+    const addons=(b.addOns&&b.addOns.length)?b.addOns.join(', '):'–';
+    const price=b.estimatedPriceMin&&b.estimatedPriceMax?`${b.estimatedPriceMin}–${b.estimatedPriceMax} ฿`:(b.estimatedPriceMax?`${b.estimatedPriceMax} ฿`:'–');
+    const dur=b.estimatedDurationMax?`${b.estimatedDurationMax} นาที`:'–';
+    return `<div style="background:var(--white);border-radius:12px;padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:12px;color:var(--brown)">${dateStr}</span>
+        <span style="font-size:11px;color:var(--text-mid)">${groomer}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-dark);margin-bottom:3px">${b.service||'–'}</div>
+      <div style="font-size:11px;color:var(--text-mid);margin-bottom:2px">เสริม: ${addons}</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--slate)">
+        <span>${price}</span><span>${dur}</span>
+      </div>
+    </div>`;
+  }).join('');
 
-  // Notes history (last 3 non-empty notes)
-  const notesList=hist.filter(b=>b.notes&&b.notes.trim()).slice(0,3).map(b=>`<div style="font-size:11px;color:var(--text-mid);border-left:2px solid var(--sand);padding-left:8px;margin-top:4px">"${b.notes}"</div>`).join('');
-
-  // Behavior badges in history
-  const flagHtml=(flags.noshow||flags.late||flags.cancel)
-    ?`<div style="margin-top:8px">${flags.noshow?`<span class="bk-badge noshow">⚠️ No-show ${flags.noshow} ครั้ง</span>`:''}${flags.late?`<span class="bk-badge late">⏰ มาสาย ${flags.late} ครั้ง</span>`:''}${flags.cancel?`<span class="bk-badge cancel">↩ ยกเลิก ${flags.cancel} ครั้ง</span>`:''}${cancelledCount?`<span class="bk-badge cancel">ยกเลิกคิว ${cancelledCount} ครั้ง</span>`:''}</div>`:'';
-
-  el.innerHTML=`<div class="history-title">📋 ประวัติการใช้บริการ</div>
-    <div class="history-stat-row">
-      <div class="history-stat"><div class="hs-num">${count}</div><div class="hs-label">ครั้งที่ผ่านมา</div></div>
-      <div class="history-stat"><div class="hs-num">${avgDur}<span style="font-size:11px"> นาที</span></div><div class="hs-label">เวลาเฉลี่ย</div></div>
-    </div>
-    ${flagHtml}
-    <div style="font-size:11px;color:var(--text-mid);margin:8px 0 3px">บริการที่นิยม: <strong>${topSvc}</strong></div>
-    ${topAddons.length?`<div class="history-tags">${topAddons.map(a=>`<span class="history-tag">✦ ${a}</span>`).join('')}</div>`:''}
-    <div class="history-last">📆 เยี่ยมล่าสุด: <strong>${lastDate}</strong></div>
-    ${notesList?`<div style="margin-top:8px;font-size:11px;color:var(--text-mid);font-weight:600">หมายเหตุที่ผ่านมา:</div>${notesList}`:''}`;
+  el.innerHTML=`<div class="history-title">📋 ประวัติการใช้บริการ (${hist.length} ครั้ง)</div>
+    ${flagHtml}${rows}`;
 }
 
 // MODAL
