@@ -481,7 +481,12 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 .flag-btn.cancel-flag{background:#f4e2e2;color:#a05050;border-color:#e0b0b0;}
 .flag-btn.cancel-flag.active{background:#a05050;color:#fff;}
 
-/* LINE MESSAGE MODAL */
+/* PET GRID in booking modal */
+.pet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0;}
+.pet-card{background:var(--cream);border:1.5px solid var(--sand);border-radius:14px;padding:10px 12px;}
+.pet-card-name{font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:var(--brown);margin-bottom:4px;}
+.pet-card-row{font-size:11px;color:var(--text-mid);line-height:1.6;}
+.pet-card-row strong{color:var(--text-dark);}
 .line-msg-overlay{position:fixed;inset:0;background:rgba(58,47,39,.45);z-index:600;display:flex;align-items:flex-end;justify-content:center;}
 .line-msg-overlay.hidden{display:none;}
 .line-msg-sheet{background:var(--white);border-radius:28px 28px 0 0;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:24px 20px 36px;animation:slideUp .28s cubic-bezier(.34,1.4,.64,1);}
@@ -2096,22 +2101,59 @@ let modalBkId=null;
 function openModal(id){
   const bk=bookings.find(b=>b.id===id);if(!bk)return;
   modalBkId=id;
-  document.getElementById('modalTitle').textContent=(bk.petType==='dog'?'🐕':'🐈')+' '+bk.petName+' — '+bk.customerName;
-  const addonStr=bk.addOns&&bk.addOns.length?bk.addOns.join(', '):'–';
+
+  // Parse multi-pet JSON from notes if present
+  let multiPet=null,plainNotes='';
+  try{
+    const parsed=JSON.parse(bk.notes||'');
+    if(parsed&&parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
+    else plainNotes=bk.notes||'';
+  }catch(e){plainNotes=bk.notes||'';}
+
+  // Title
+  if(multiPet){
+    const names=multiPet.pets.map(p=>(p.petType==='dog'?'🐕':'🐈')+' '+p.name).join(' · ');
+    document.getElementById('modalTitle').textContent=names+' — '+bk.customerName;
+  } else {
+    document.getElementById('modalTitle').textContent=(bk.petType==='dog'?'🐕':'🐈')+' '+bk.petName+' — '+bk.customerName;
+  }
+
   const priceStr=bk.estimatedPriceMin===bk.estimatedPriceMax?'฿'+(bk.estimatedPriceMin||0).toLocaleString():'฿'+(bk.estimatedPriceMin||0).toLocaleString()+'–฿'+(bk.estimatedPriceMax||0).toLocaleString();
   const groomerLbl=getGroomerName(bk.groomerId);
   const dateDisp=bk.date?new Date(bk.date+'T12:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'–';
   const endDisp=bk.endTimeMin&&bk.endTimeMax&&bk.endTimeMin!==bk.endTimeMax?`${bk.endTimeMin}–${bk.endTimeMax}`:(bk.endTime||'');
+
+  let petSection='';
+  if(multiPet){
+    const cards=multiPet.pets.map(p=>{
+      const icon=p.petType==='dog'?'🐕':'🐈';
+      const addonsStr=p.addons&&p.addons.length?p.addons.join(', '):'–';
+      const pStr=p.priceMin===p.priceMax?'฿'+(p.priceMin||0).toLocaleString():'฿'+(p.priceMin||0).toLocaleString()+'–฿'+(p.priceMax||0).toLocaleString();
+      return`<div class="pet-card">
+        <div class="pet-card-name">${icon} ${p.name}</div>
+        <div class="pet-card-row">${p.weight||''} · ${p.coat||''}</div>
+        <div class="pet-card-row"><strong>${p.service||''}</strong></div>
+        ${addonsStr!=='–'?`<div class="pet-card-row">+ ${addonsStr}</div>`:''}
+        <div class="pet-card-row" style="margin-top:4px;font-weight:700;color:var(--brown)">${pStr}</div>
+      </div>`;
+    }).join('');
+    petSection=`<div style="font-size:11px;color:var(--text-mid);margin:8px 0 4px;font-weight:600">สัตว์เลี้ยง (${multiPet.petCount} ตัว)</div><div class="pet-grid">${cards}</div>`;
+  } else {
+    const addonStr=bk.addOns&&bk.addOns.length?bk.addOns.join(', '):'–';
+    petSection=`
+    <div class="modal-row"><span class="ml">น้ำหนัก / ขน</span><span class="mv">${bk.weightRange||'–'} · ${bk.coatType||'–'}</span></div>
+    <div class="modal-row"><span class="ml">บริการ</span><span class="mv">${bk.service}</span></div>
+    <div class="modal-row"><span class="ml">บริการเสริม</span><span class="mv">${addonStr}</span></div>`;
+  }
+
   document.getElementById('modalBody').innerHTML=`
     <div class="modal-row"><span class="ml">วันที่</span><span class="mv">${dateDisp}</span></div>
     <div class="modal-row"><span class="ml">ช่าง</span><span class="mv">${groomerLbl}</span></div>
     <div class="modal-row"><span class="ml">เวลา</span><span class="mv">${bk.startTime} – ${endDisp} น.</span></div>
     <div class="modal-row"><span class="ml">เบอร์โทร</span><span class="mv">${bk.phone||'–'}</span></div>
-    <div class="modal-row"><span class="ml">น้ำหนัก / ขน</span><span class="mv">${bk.weightRange||'–'} · ${bk.coatType||'–'}</span></div>
-    <div class="modal-row"><span class="ml">บริการ</span><span class="mv">${bk.service}</span></div>
-    <div class="modal-row"><span class="ml">บริการเสริม</span><span class="mv">${addonStr}</span></div>
+    ${petSection}
     <div class="modal-row"><span class="ml">ราคาประมาณ</span><span class="mv">${priceStr}</span></div>
-    ${bk.notes?`<div class="modal-row"><span class="ml">หมายเหตุ</span><span class="mv">${bk.notes}</span></div>`:''}`;
+    ${plainNotes?`<div class="modal-row"><span class="ml">หมายเหตุ</span><span class="mv">${plainNotes}</span></div>`:''}`;
   const stRow=document.getElementById('statusToggleRow');
   stRow.innerHTML=STATUSES.map(s=>`<button class="status-toggle-btn ${s==='รอยืนยัน'?'waiting':'confirmed'}${bk.status===s?' active':''}" onclick="setStatus('${s}')">${s==='รอยืนยัน'?'⏳':'✅'} ${s}</button>`).join('');
   buildHistorySection(bk);
