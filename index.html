@@ -1511,9 +1511,11 @@ function renderWeekly(){
         const dim=hasSearch&&!matches?'opacity:0.2;filter:grayscale(60%)':'';
         const hl=hasSearch&&matches?' search-highlight':'';
         const badges=getBadgesHtml(b.phone);
-        const lane=bkLane[b.id]||0;
+        const lane=bkLane[b.id]||0,tot=bkTotal[b.id]||1;
         const lOff=lane*10;
-        const pos=lane>0?`left:${3+lOff}px;right:3px;z-index:${3-lane};`:'left:3px;right:3px;';
+        let pos;
+        if(tot>1){const lw=100/tot,ll=lane*lw;pos=`left:calc(${ll}% + 2px - ${lOff}px);width:calc(${lw}% - 4px + ${lOff}px);z-index:${3+lane};`;}
+        else{pos='left:3px;right:3px;';}
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
@@ -1669,7 +1671,7 @@ function renderDaily(){
       const dim=searchQuery&&!matches?'opacity:0.2;filter:grayscale(60%);':'';
       const badges=getBadgesHtml(b.phone);
       const lane=colLane[b.id]||0,lOff=lane*10;
-      const posStyle=lane>0?`left:${3+lOff}px;right:3px;z-index:${3-lane};`:'';
+      const posStyle=lane>0?`left:${3+lOff}px;right:3px;z-index:${3+lane};`:'';
       blocks+=`<div class="daily-bk-block ${cls}${hl}" data-id="${b.id}" data-groomer="${groomer}" style="top:${top}px;height:${h}px;${posStyle}${dim}">
         <div class="resize-handle resize-handle-top" data-resize="top" data-id="${b.id}" data-groomer="${groomer}"></div>
         <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
