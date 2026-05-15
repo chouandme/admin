@@ -839,7 +839,7 @@ function refreshQbGroomerDropdown(){
 }
 
 // AUTH
-const ADMIN_PASSWORD='chouandmeadmin', SESSION_KEY='chouandme_admin_auth';
+const ADMIN_PASSWORD='chouandmeadmin', ADMIN_EMAIL='chouandme.petwellness@gmail.com', SESSION_KEY='chouandme_admin_auth';
 function checkAuth(){ return sessionStorage.getItem(SESSION_KEY)==='true'; }
 function togglePw(){
   const i=document.getElementById('pwInput'),eo=document.getElementById('eyeIcon'),ef=document.getElementById('eyeOffIcon');
@@ -847,9 +847,17 @@ function togglePw(){
   else{i.type='password';eo.style.display='block';ef.style.display='none';}
   i.focus();
 }
-function doLogin(){
+async function doLogin(){
   const val=document.getElementById('pwInput').value,errEl=document.getElementById('loginError');
   if(val===ADMIN_PASSWORD){
+    try{
+      const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{
+        method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
+        body:JSON.stringify({email:ADMIN_EMAIL,password:val})
+      });
+      const d=await r.json();
+      if(d.access_token){SB_TOKEN=d.access_token;try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}}
+    }catch(e){console.warn('Supabase auth failed, using anon token:',e.message);}
     sessionStorage.setItem(SESSION_KEY,'true');
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('adminDashboard').style.display='block';
@@ -862,7 +870,7 @@ function doLogin(){
   }
 }
 function doLogout(){
-  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem('sb_token');
   document.getElementById('adminDashboard').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('pwInput').value='';
@@ -878,8 +886,8 @@ if(checkAuth()){document.getElementById('loginScreen').style.display='none';docu
 const SB_URL = 'https://qlyyeetzvtegbgasmmmb.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFseXllZXR6dnRlZ2JnYXNtbW1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNTA1MjMsImV4cCI6MjA5MzgyNjUyM30.nryBXiYnGTPNpAAEPOdqRExVDd3IeT4S0vAiZ1sHkkg';
 
-// Auth token — starts as anon, replaced with user JWT after login
-let SB_TOKEN = SB_ANON;
+// Auth token — restored from session if available, otherwise anon
+let SB_TOKEN = (()=>{try{return sessionStorage.getItem('sb_token')||SB_ANON;}catch(e){return SB_ANON;}})();
 
 function sbHeaders(extra={}){
   return Object.assign({
@@ -1059,12 +1067,10 @@ async function updateBooking(id, fields){
 
 // ── DELETE ─────────────────────────────────
 async function deleteBooking(id){
-  if(dbOnline){
-    try {
-      await fetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
-        { method:'DELETE', headers:sbHeaders({'Prefer':'return=minimal'}) });
-    } catch(err){ console.error('deleteBooking error:', err.message); }
-  }
+  try {
+    await fetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
+      { method:'DELETE', headers:sbHeaders({'Prefer':'return=minimal'}) });
+  } catch(err){ console.error('deleteBooking error:', err.message); }
 }
 
 // ── TIME HELPERS ───────────────────────────
