@@ -1931,8 +1931,14 @@ function copyLineMsg(){
 }
 const LINE_OA_URL='https://chat.line.biz/';
 function openLineOA(){
-  if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)){window.location.href=LINE_OA_URL;}
-  else{window.open(LINE_OA_URL,'_blank');}
+  const ua=navigator.userAgent;
+  if(/Android/i.test(ua)){
+    window.location.href='intent://chat.line.biz/#Intent;scheme=https;package=com.linecorp.lineoa;S.browser_fallback_url=https%3A%2F%2Fchat.line.biz%2F;end';
+  } else if(/iPhone|iPad|iPod/i.test(ua)){
+    window.location.href=LINE_OA_URL;
+  } else {
+    window.open(LINE_OA_URL,'_blank');
+  }
 }
 function openLineApp(){
   copyLineMsg();
