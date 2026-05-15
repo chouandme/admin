@@ -1514,8 +1514,12 @@ function renderWeekly(){
         const lane=bkLane[b.id]||0,tot=bkTotal[b.id]||1;
         const lOff=lane*10;
         let pos;
-        if(tot>1){const lw=100/tot,ll=lane*lw;pos=`left:calc(${ll}% + 2px - ${lOff}px);width:calc(${lw}% - 4px + ${lOff}px);z-index:${3+lane};`;}
-        else{pos='left:3px;right:3px;';}
+        if(tot>1){
+          const lw=100/tot,ll=lane*lw;
+          const leftVal=`calc(${ll}% + 2px - ${lOff}px)`;
+          const rightVal=`calc(${100-ll-lw}% + 2px)`;
+          pos=`left:${leftVal};right:${rightVal};z-index:${3+lane};`;
+        }else{pos='left:3px;right:3px;';}
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
