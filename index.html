@@ -1501,6 +1501,36 @@ function buildAdminStats(){
 // WEEKLY
 let weekDragId=null;
 function onWeekDragStart(e,id){weekDragId=id;e.dataTransfer.setData('bkId',id);}
+
+// Returns {left,right,width,zIndex} for a booking block in the weekly view
+// Rule 1: no overlap → full width
+// Rule 2: same groomer, overlap ≤30 min → 10px stack offset
+// Rule 3: different groomers overlap → divide column equally by groomer count
+function calcWeekBlockPos(b, allBks, gsW){
+  const s1=timeToMin(b.startTime),e1=s1+(b.estimatedDurationMax||60);
+  const overlapping=allBks.filter(o=>{
+    if(o.id===b.id)return false;
+    const s2=timeToMin(o.startTime),e2=s2+(o.estimatedDurationMax||60);
+    return s1<e2&&e1>s2;
+  });
+  if(!overlapping.length) return{left:'3px',right:'3px',width:'auto',zIndex:2};
+  const hasDiffGroomer=overlapping.some(o=>o.groomerId!==b.groomerId);
+  if(!hasDiffGroomer){
+    const maxOvl=Math.max(...overlapping.map(o=>{
+      const s2=timeToMin(o.startTime),e2=s2+(o.estimatedDurationMax||60);
+      return Math.max(0,Math.min(e1,e2)-Math.max(s1,s2));
+    }));
+    if(maxOvl<=30){
+      const group=[b,...overlapping].sort((a,c)=>(a.startTime||'').localeCompare(c.startTime||''));
+      const lane=group.findIndex(x=>x.id===b.id);
+      return{left:`${3+lane*10}px`,right:'3px',width:'auto',zIndex:3+lane};
+    }
+  }
+  const gCount=Math.max(gsW.length,1),gIdx=Math.max(0,gsW.findIndex(g=>g.id===b.groomerId));
+  const colW=100/gCount;
+  return{left:`calc(${gIdx*colW}% + 2px)`,width:`calc(${colW}% - 4px)`,right:'auto',zIndex:2};
+}
+
 function calcWeekLanes(bks){
   // Sort by groomer order (matches daily view left-to-right), then start time
   const gs=loadGroomers(),gOrd={};gs.forEach((g,i)=>{gOrd[g.id]=i;});
@@ -1542,17 +1572,15 @@ function renderWeekly(){
     if(!isMon){
       if(!allBks.length)blocks=`<div class="week-no-result">ว่าง</div>`;
       else if(hasSearch&&!allBks.some(b=>matchesSearch(b)))blocks=`<div class="week-no-result">ไม่พบข้อมูล</div>`;
-      const gsW=loadGroomers(),gCountW=Math.max(gsW.length,1),colWPct=100/gCountW;
-      // Groomer sub-column dividers
-      gsW.forEach((_,i)=>{if(i===0)return;blocks+=`<div style="position:absolute;top:0;bottom:0;left:${i*colWPct}%;width:1px;background:var(--sand);z-index:1;pointer-events:none"></div>`;});
+      const gsW=loadGroomers();
       allBks.forEach(b=>{
         const topPx=pxFromOpen(b.startTime),dur=b.estimatedDurationMax||60,hPx=Math.max(dur/30*SLOT_PX-3,22);
         const cls=STATUS_CLASS[b.status]||'st-waiting',matches=matchesSearch(b);
         const dim=hasSearch&&!matches?'opacity:0.2;filter:grayscale(60%)':'';
         const hl=hasSearch&&matches?' search-highlight':'';
         const badges=getBadgesHtml(b.phone);
-        const gIdx=Math.max(0,gsW.findIndex(g=>g.id===b.groomerId));
-        const pos=`left:calc(${gIdx*colWPct}% + 2px);width:calc(${colWPct}% - 4px);right:auto;z-index:2;`;
+        const p=calcWeekBlockPos(b,allBks,gsW);
+        const pos=`left:${p.left};${p.right!=='auto'?'right:'+p.right+';':''}${p.width!=='auto'?'width:'+p.width+';':''}z-index:${p.zIndex};`;
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
@@ -1591,11 +1619,15 @@ function renderWeekly(){
       if(ghost){
         ghost.style.display='block';ghost.style.top=snapped+'px';ghost.style.height=Math.max(bk.estimatedDurationMax/30*SLOT_PX-3,22)+'px';
         ghost.style.background='rgba(160,185,149,.35)';ghost.style.borderColor='var(--sage)';
-        // Show ghost in the groomer sub-column under the cursor
-        const gsG=loadGroomers(),gCountG=Math.max(gsG.length,1),colWG=100/gCountG;
+        // Simulate drop to show accurate ghost position
+        const gsG=loadGroomers(),gCountG=Math.max(gsG.length,1);
         const xFracG=(e.clientX-rect.left)/rect.width;
         const gIdxG=Math.max(0,Math.min(gCountG-1,Math.floor(xFracG*gCountG)));
-        ghost.style.left=`calc(${gIdxG*colWG}% + 2px)`;ghost.style.width=`calc(${colWG}% - 4px)`;ghost.style.right='auto';
+        const newTime=pxToTime(snapped),newDate=el.dataset.date;
+        const simBk={...bk,startTime:newTime,date:newDate,groomerId:gsG[gIdxG]?.id||bk.groomerId};
+        const simBks=[...bookings.filter(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'),simBk];
+        const gp=calcWeekBlockPos(simBk,simBks,gsG);
+        ghost.style.left=gp.left;ghost.style.right=gp.right;ghost.style.width=gp.width!=='auto'?gp.width:'';
       }
     });
     el.addEventListener('dragleave',()=>{el.style.background='';const g=document.getElementById('wghost-'+el.dataset.date);if(g)g.style.display='none';});
