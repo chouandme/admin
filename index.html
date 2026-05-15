@@ -1538,11 +1538,15 @@ function renderWeekly(){
       const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top;
       const snapped=Math.max(0,Math.min(totalPx()-bk.estimatedDurationMax/30*SLOT_PX,snapPx(rawPx)));
       const newTime=pxToTime(snapped);
-      if(canBook(newDate,newTime,bk.estimatedDurationMax,bk.id)){
-        bk.date=newDate;bk.startTime=newTime;bk.endTime=calcEndTime(newTime,bk.estimatedDurationMax);
+      const dur=bk.estimatedDurationMax||60;
+      const gs=loadGroomers();
+      const ordG=[gs.find(g=>g.id===bk.groomerId),...gs.filter(g=>g.id!==bk.groomerId)].filter(Boolean);
+      const freeG=ordG.find(g=>!bookings.some(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&(b.groomerId===g.id||(!b.groomerId&&g.id===gs[0]?.id))&&overlaps(b.startTime,effectiveDuration(b),newTime,dur)));
+      if(freeG){
+        bk.date=newDate;bk.startTime=newTime;bk.endTime=calcEndTime(newTime,dur);bk.groomerId=freeG.id;
         updateBooking(bk.id,{date:bk.date,startTime:bk.startTime,endTime:bk.endTime,groomerId:bk.groomerId});
         weekDragId=null;showToast('ย้ายคิวเรียบร้อยแล้ว ✓','success');renderWeekly();buildAdminStats();
-      }else{showToast('ช่วงเวลานี้เต็มแล้ว ไม่สามารถย้ายคิวได้','error');}
+      }else{showToast('ช่วงเวลานี้เต็มทุกช่าง ไม่สามารถย้ายคิวได้','error');}
     });
   });
   if(searchQuery)setTimeout(()=>{const f=document.querySelector('.week-bk-block.search-highlight');if(f)f.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},50);
@@ -1697,10 +1701,20 @@ function onDragEnd(e){
   clearGhosts();hideTip();
   const{bkId,moved,ok,pt,pg}=ix;ix=null;
   if(!moved){openModal(bkId);return;}
-  if(ok){
-    const bk=bookings.find(b=>b.id===bkId);
-    if(bk){bk.startTime=pt;bk.endTime=calcEndTime(pt,bk.estimatedDurationMax);bk.groomerId=pg;bk.date=adminDaySelected;updateBooking(bk.id,{startTime:bk.startTime,endTime:bk.endTime,groomerId:bk.groomerId,date:bk.date});showToast('ย้ายคิวเรียบร้อยแล้ว ✓','success');renderCurrentView();buildAdminStats();}
-  }else{showToast('ช่วงเวลานี้เต็มแล้ว ไม่สามารถย้ายคิวได้','error');renderDaily();}
+  const bk=bookings.find(b=>b.id===bkId);
+  if(bk){
+    let targetG=pg;
+    if(!ok){
+      const gs=loadGroomers();
+      const ordG=[gs.find(g=>g.id===pg),...gs.filter(g=>g.id!==pg)].filter(Boolean);
+      const freeG=ordG.find(g=>canGroomer(g.id,pt,bk.estimatedDurationMax||60,bkId));
+      if(!freeG){showToast('ช่วงเวลานี้เต็มทุกช่าง','error');renderDaily();return;}
+      targetG=freeG.id;
+    }
+    bk.startTime=pt;bk.endTime=calcEndTime(pt,bk.estimatedDurationMax);bk.groomerId=targetG;bk.date=adminDaySelected;
+    updateBooking(bk.id,{startTime:bk.startTime,endTime:bk.endTime,groomerId:bk.groomerId,date:bk.date});
+    showToast('ย้ายคิวเรียบร้อยแล้ว ✓','success');renderCurrentView();buildAdminStats();
+  }
 }
 
 function onResDown(e){
