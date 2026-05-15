@@ -1542,15 +1542,17 @@ function renderWeekly(){
     if(!isMon){
       if(!allBks.length)blocks=`<div class="week-no-result">ว่าง</div>`;
       else if(hasSearch&&!allBks.some(b=>matchesSearch(b)))blocks=`<div class="week-no-result">ไม่พบข้อมูล</div>`;
-      const{bkLane,bkTotal}=calcWeekLanes(allBks);
+      const gsW=loadGroomers(),gCountW=Math.max(gsW.length,1),colWPct=100/gCountW;
+      // Groomer sub-column dividers
+      gsW.forEach((_,i)=>{if(i===0)return;blocks+=`<div style="position:absolute;top:0;bottom:0;left:${i*colWPct}%;width:1px;background:var(--sand);z-index:1;pointer-events:none"></div>`;});
       allBks.forEach(b=>{
         const topPx=pxFromOpen(b.startTime),dur=b.estimatedDurationMax||60,hPx=Math.max(dur/30*SLOT_PX-3,22);
         const cls=STATUS_CLASS[b.status]||'st-waiting',matches=matchesSearch(b);
         const dim=hasSearch&&!matches?'opacity:0.2;filter:grayscale(60%)':'';
         const hl=hasSearch&&matches?' search-highlight':'';
         const badges=getBadgesHtml(b.phone);
-        const lane=bkLane[b.id]||0,lOff=lane*10;
-        const pos=lane>0?`left:${3+lOff}px;right:3px;z-index:${3+lane};`:'left:3px;right:3px;';
+        const gIdx=Math.max(0,gsW.findIndex(g=>g.id===b.groomerId));
+        const pos=`left:calc(${gIdx*colWPct}% + 2px);width:calc(${colWPct}% - 4px);right:auto;z-index:2;`;
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
@@ -1589,18 +1591,11 @@ function renderWeekly(){
       if(ghost){
         ghost.style.display='block';ghost.style.top=snapped+'px';ghost.style.height=Math.max(bk.estimatedDurationMax/30*SLOT_PX-3,22)+'px';
         ghost.style.background='rgba(160,185,149,.35)';ghost.style.borderColor='var(--sage)';
-        // Show expected lane width based on overlapping bookings at this time
-        const newTime=pxToTime(snapped),dur=bk.estimatedDurationMax||60,newDate=el.dataset.date;
-        const existing=bookings.filter(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&overlaps(b.startTime,b.estimatedDurationMax||60,newTime,dur));
-        if(existing.length>0){
-          const gs2=loadGroomers(),gOrd2={};gs2.forEach((g,i)=>{gOrd2[g.id]=i;});
-          const all=[...existing,bk].sort((a,b)=>{const ao=gOrd2[a.groomerId]??999,bo=gOrd2[b.groomerId]??999;return ao!==bo?ao-bo:(a.startTime||'').localeCompare(b.startTime||'');});
-          const lane=all.findIndex(b=>b.id===bk.id),tot=Math.min(all.length,gs2.length);
-          const lw=100/tot,ll=Math.min(lane,tot-1)*lw;
-          ghost.style.left=`calc(${ll}% + 2px)`;ghost.style.width=`calc(${lw}% - 4px)`;ghost.style.right='auto';
-        }else{
-          ghost.style.left='3px';ghost.style.right='3px';ghost.style.width='auto';
-        }
+        // Show ghost in the groomer sub-column under the cursor
+        const gsG=loadGroomers(),gCountG=Math.max(gsG.length,1),colWG=100/gCountG;
+        const xFracG=(e.clientX-rect.left)/rect.width;
+        const gIdxG=Math.max(0,Math.min(gCountG-1,Math.floor(xFracG*gCountG)));
+        ghost.style.left=`calc(${gIdxG*colWG}% + 2px)`;ghost.style.width=`calc(${colWG}% - 4px)`;ghost.style.right='auto';
       }
     });
     el.addEventListener('dragleave',()=>{el.style.background='';const g=document.getElementById('wghost-'+el.dataset.date);if(g)g.style.display='none';});
@@ -1616,10 +1611,14 @@ function renderWeekly(){
       const newTime=pxToTime(snapped);
       const dur=bk.estimatedDurationMax||60;
       const gs=loadGroomers();
-      const ordG=[gs.find(g=>g.id===bk.groomerId),...gs.filter(g=>g.id!==bk.groomerId)].filter(Boolean);
-      const freeG=ordG.find(g=>!bookings.some(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&(b.groomerId===g.id||(!b.groomerId&&g.id===gs[0]?.id))&&overlapsAdmin(b.startTime,b.estimatedDurationMax||60,newTime,dur)));
-      if(freeG){
-        bk.date=newDate;bk.startTime=newTime;bk.endTime=calcEndTime(newTime,dur);bk.groomerId=freeG.id;
+      // Pick groomer from horizontal drop position
+      const xFrac=(e.clientX-rect.left)/rect.width;
+      const gIdx=Math.max(0,Math.min(gs.length-1,Math.floor(xFrac*gs.length)));
+      const targetG=gs[gIdx];
+      const isFree=targetG&&!bookings.some(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&b.groomerId===targetG.id&&overlapsAdmin(b.startTime,b.estimatedDurationMax||60,newTime,dur));
+      const chosenG=isFree?targetG:gs.find(g=>!bookings.some(b=>b.id!==bk.id&&b.date===newDate&&b.status!=='ยกเลิก'&&b.groomerId===g.id&&overlapsAdmin(b.startTime,b.estimatedDurationMax||60,newTime,dur)));
+      if(chosenG){
+        bk.date=newDate;bk.startTime=newTime;bk.endTime=calcEndTime(newTime,dur);bk.groomerId=chosenG.id;
         updateBooking(bk.id,{date:bk.date,startTime:bk.startTime,endTime:bk.endTime,groomerId:bk.groomerId});
         weekDragId=null;showToast('ย้ายคิวเรียบร้อยแล้ว ✓','success');renderWeekly();buildAdminStats();
       }else{showToast('ช่วงเวลานี้เต็มทุกช่าง ไม่สามารถย้ายคิวได้','error');}
