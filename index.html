@@ -2190,6 +2190,7 @@ function renderQbPets(){
         ${qbPets.length>1?`<button class="qb-pet-remove" onclick="removeQbPet(${i})">×</button>`:''}
       </div>
       <div class="qb-row"><label>ชื่อน้อง</label><input type="text" value="${p.name}" placeholder="ชื่อสัตว์เลี้ยง" oninput="qbPets[${i}].name=this.value"></div>
+      <div class="qb-row"><label>พันธุ์</label><input type="text" value="${p.breed||''}" placeholder="พันธุ์สัตว์เลี้ยง" oninput="qbPets[${i}].breed=this.value"></div>
       <div class="qb-row"><label>ประเภท</label><select onchange="qbPets[${i}].petType=this.value;qbPets[${i}].service='';renderQbPets()"><option value="dog"${p.petType==='dog'?' selected':''}>🐕 สุนัข</option><option value="cat"${p.petType==='cat'?' selected':''}>🐈 แมว</option></select></div>
       <div class="qb-row"><label>บริการ</label><select onchange="qbPets[${i}].service=this.value">${svcs}</select></div>
       <div class="qb-section-label">บริการเสริม</div>
@@ -2199,7 +2200,7 @@ function renderQbPets(){
 }
 function addQbPet(){
   if(qbPets.length>=4)return;
-  qbPets.push({name:'',petType:'dog',service:'อาบน้ำ',addons:[]});
+  qbPets.push({name:'',breed:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]});
   renderQbPets();
 }
 function removeQbPet(i){
@@ -2210,7 +2211,7 @@ function qbToggleAddon(i,addon,checked){
   else{qbPets[i].addons=qbPets[i].addons.filter(a=>a!==addon);}
 }
 function openQuickBooking(){
-  qbPets=[{name:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]}];
+  qbPets=[{name:'',breed:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]}];
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
@@ -2236,7 +2237,7 @@ async function saveQuickBooking(){
   const petName=qbPets.map(p=>p.name.trim()).join(' · ');
   const service=qbPets.map(p=>p.service).join(' | ');
   const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
-  const notes=qbPets.length>1?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),petType:p.petType,service:p.service,addons:p.addons}))}):'' ;
+  const notes=qbPets.length>1?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))}):'';
   const newBk={
     id:'QB-'+Date.now(),
     customerName:name, phone,
