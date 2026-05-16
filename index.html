@@ -2151,15 +2151,14 @@ function openModal(id){
   let multiPet=null,plainNotes='';
   try{
     const parsed=JSON.parse(bk.notes||'');
-    if(parsed&&parsed.petCount&&Array.isArray(parsed.pets)){
-      multiPet=parsed;
-      plainNotes=(parsed.notes||'').trim(); // extract embedded text notes if present
-    } else if(parsed&&'breed' in parsed){
-      plainNotes=(parsed.notes||'').trim(); // suppress breed JSON but keep any embedded notes
+    if(parsed&&typeof parsed==='object'){
+      if(parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
+      // For any JSON object: extract embedded .notes text; never show raw JSON
+      plainNotes=(parsed.notes||'').trim();
     } else {
-      plainNotes=bk.notes||'';
+      plainNotes=bk.notes||''; // primitive JSON value — treat as plain text
     }
-  }catch(e){plainNotes=bk.notes||'';}
+  }catch(e){plainNotes=bk.notes||'';} // not JSON — treat as plain text
 
   // Title
   if(multiPet){
