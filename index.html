@@ -1505,7 +1505,7 @@ function buildAdminStats(){
 
 // WEEKLY
 let weekDragId=null,weekDragOffsetY=0;
-function onWeekDragStart(e,id){weekDragId=id;weekDragOffsetY=e.offsetY||0;e.dataTransfer.setData('bkId',id);}
+function onWeekDragStart(e,id){weekDragId=id;weekDragOffsetY=e.offsetY||0;e.dataTransfer.setData('bkId',id);e.dataTransfer.effectAllowed='move';}
 
 // Returns {left,right,width,zIndex} for a booking block in the weekly view
 // Rule 1: no overlap → full width
@@ -1588,7 +1588,7 @@ function renderWeekly(){
         const pos=`left:${p.left};${p.right!=='auto'?'right:'+p.right+';':''}${p.width!=='auto'?'width:'+p.width+';':''}z-index:${p.zIndex};`;
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
-          <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
+          <button class="card-cancel-btn" draggable="false" onmousedown="event.stopPropagation()" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
           <div class="week-bk-title">${b.petName}</div>
           <div class="week-bk-sub">${b.customerName}</div>
           <div class="week-bk-time">${b.startTime}–${b.endTime||''}</div>
@@ -1614,7 +1614,7 @@ function renderWeekly(){
   document.querySelectorAll('#weeklyGridOuter .resize-handle').forEach(el=>{el.addEventListener('mousedown',onResDown,false);el.addEventListener('touchstart',onResDown,{passive:false});});
   document.querySelectorAll('.week-col-body:not(.closed-body)').forEach(el=>{
     el.addEventListener('dragover',e=>{
-      e.preventDefault();
+      e.preventDefault();e.dataTransfer.dropEffect='move';
       const id=weekDragId;if(!id)return;
       const bk=bookings.find(b=>b.id===id);if(!bk)return;
       const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top-weekDragOffsetY;
