@@ -405,13 +405,24 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 .qb-row label{font-size:12px;color:var(--text-mid);white-space:nowrap;font-weight:500;}
 .qb-row input,.qb-row select{width:100%;padding:9px 12px;border:2px solid var(--sand);border-radius:12px;font-family:'Mitr',sans-serif;font-size:13px;color:var(--text-dark);background:var(--cream);outline:none;transition:border .2s;}
 .qb-row input:focus,.qb-row select:focus{border-color:var(--brown);background:var(--white);}
-.qb-estimate{background:var(--yellow-green);border-radius:14px;padding:10px 14px;margin:12px 0;font-size:13px;color:var(--text-mid);min-height:40px;}
 .qb-err{font-size:12px;color:#c05050;font-weight:600;margin-top:6px;display:none;}
 .qb-err.visible{display:block;}
 .qb-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
 .qb-save{background:var(--brown);color:#fff;border:none;border-radius:var(--radius-pill);padding:13px;font-family:'Quicksand',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
 .qb-save:hover{background:#8a6145;}
 .qb-cancel-btn{background:var(--cream);color:var(--text-mid);border:2px solid var(--sand);border-radius:var(--radius-pill);padding:13px;font-family:'Quicksand',sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
+.qb-pet-card{border:2px solid var(--sand);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--cream);}
+.qb-pet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.qb-pet-header span{font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:var(--brown);}
+.qb-pet-remove{background:rgba(220,80,80,.12);color:#c05050;border:none;border-radius:50%;width:24px;height:24px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qb-add-pet-btn{width:100%;padding:10px;border:2px dashed var(--sand);border-radius:14px;background:transparent;color:var(--text-mid);font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all .18s;}
+.qb-add-pet-btn:hover{border-color:var(--brown);color:var(--brown);}
+.qb-section-label{font-size:11px;color:var(--text-mid);font-weight:600;margin:4px 0 4px;letter-spacing:.3px;}
+.qb-addon-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px;}
+.qb-addon-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-dark);background:var(--white);border:1.5px solid var(--sand);border-radius:99px;padding:5px 11px;cursor:pointer;transition:border .15s;}
+.qb-addon-item:has(input:checked){border-color:var(--brown);background:#f5ede6;}
+.qb-addon-item input{width:13px;height:13px;accent-color:var(--brown);cursor:pointer;}
+.qb-divider{border:none;border-top:1.5px solid var(--sand);margin:14px 0;}
 
 /* DEBUG */
 .debug-table{width:100%;border-collapse:collapse;font-size:11px;}
@@ -630,23 +641,13 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
     </div>
     <div class="qb-row"><label>ชื่อลูกค้า</label><input id="qbName" type="text" placeholder="ชื่อ-สกุล"></div>
     <div class="qb-row"><label>เบอร์โทร</label><input id="qbPhone" type="tel" placeholder="0812345678"></div>
-    <div class="qb-row"><label>ชื่อน้อง</label><input id="qbPet" type="text" placeholder="ชื่อสัตว์เลี้ยง"></div>
-    <div class="qb-row"><label>ประเภท</label>
-      <select id="qbType"><option value="dog">🐕 สุนัข</option><option value="cat">🐈 แมว</option></select>
-    </div>
-    <div class="qb-row"><label>บริการ</label>
-      <select id="qbService" onchange="qbCalc()">
-        <option value="bath">อาบน้ำ (60 นาที)</option>
-        <option value="bath_clipper">อาบน้ำ + ตัดขน ปัตตาเลี่ยน (90 นาที)</option>
-        <option value="bath_scissor">อาบน้ำ + ตัดขน กรรไกร (120 นาที)</option>
-      </select>
-    </div>
-    <div class="qb-row"><label>ช่าง</label>
-      <select id="qbGroomer"></select>
-    </div>
-    <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date" onchange="qbCalc()"></div>
-    <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="19:00" step="900" onchange="qbCalc()"></div>
-    <div class="qb-estimate" id="qbEstimate">กรุณาเลือกวันที่และเวลาเริ่ม</div>
+    <hr class="qb-divider">
+    <div id="qbPetsList"></div>
+    <button class="qb-add-pet-btn" id="qbAddPetBtn" onclick="addQbPet()">＋ เพิ่มน้อง</button>
+    <hr class="qb-divider">
+    <div class="qb-row"><label>ช่าง</label><select id="qbGroomer"></select></div>
+    <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date"></div>
+    <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="19:00" step="900"></div>
     <div class="qb-err" id="qbErr"></div>
     <div class="qb-btns">
       <button class="qb-save" onclick="saveQuickBooking()">✓ บันทึกการจอง</button>
@@ -2169,69 +2170,91 @@ function setStatus(s){
 function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.add('hidden');}
 
 // QUICK BOOKING
-const QB_DUR={'bath':60,'bath_clipper':90,'bath_scissor':120};
+// QUICK BOOKING — multi-pet, fixed 1-hour block
+let qbPets=[];
+const QB_SERVICES=['อาบน้ำ','อาบน้ำแมว','อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','อาบน้ำ + ตัดขน (กรรไกร)'];
+const QB_ADDONS=['ขจัดครามัน','ตัดเล็บ','ทำความสะอาดหู','น้ำหอม'];
+
+function renderQbPets(){
+  const c=document.getElementById('qbPetsList');if(!c)return;
+  const btn=document.getElementById('qbAddPetBtn');
+  if(btn)btn.style.display=qbPets.length>=4?'none':'';
+  c.innerHTML=qbPets.map((p,i)=>{
+    const svcs=QB_SERVICES.map(s=>`<option value="${s}"${p.service===s?' selected':''}>${s}</option>`).join('');
+    const addons=QB_ADDONS.map(a=>`<label class="qb-addon-item"><input type="checkbox"${p.addons.includes(a)?' checked':''} onchange="qbToggleAddon(${i},'${a}',this.checked)"> ${a}</label>`).join('');
+    return`<div class="qb-pet-card">
+      <div class="qb-pet-header">
+        <span>🐾 น้องตัวที่ ${i+1}</span>
+        ${qbPets.length>1?`<button class="qb-pet-remove" onclick="removeQbPet(${i})">×</button>`:''}
+      </div>
+      <div class="qb-row"><label>ชื่อน้อง</label><input type="text" value="${p.name}" placeholder="ชื่อสัตว์เลี้ยง" oninput="qbPets[${i}].name=this.value"></div>
+      <div class="qb-row"><label>ประเภท</label><select onchange="qbPets[${i}].petType=this.value"><option value="dog"${p.petType==='dog'?' selected':''}>🐕 สุนัข</option><option value="cat"${p.petType==='cat'?' selected':''}>🐈 แมว</option></select></div>
+      <div class="qb-row"><label>บริการ</label><select onchange="qbPets[${i}].service=this.value">${svcs}</select></div>
+      <div class="qb-section-label">บริการเสริม</div>
+      <div class="qb-addon-grid">${addons}</div>
+    </div>`;
+  }).join('');
+}
+function addQbPet(){
+  if(qbPets.length>=4)return;
+  qbPets.push({name:'',petType:'dog',service:'อาบน้ำ',addons:[]});
+  renderQbPets();
+}
+function removeQbPet(i){
+  qbPets.splice(i,1);renderQbPets();
+}
+function qbToggleAddon(i,addon,checked){
+  if(checked){if(!qbPets[i].addons.includes(addon))qbPets[i].addons.push(addon);}
+  else{qbPets[i].addons=qbPets[i].addons.filter(a=>a!==addon);}
+}
 function openQuickBooking(){
+  qbPets=[{name:'',petType:'dog',service:'อาบน้ำ',addons:[]}];
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
   document.getElementById('qbErr').classList.remove('visible');
-  qbCalc();document.getElementById('qbOverlay').classList.remove('hidden');
+  renderQbPets();
+  document.getElementById('qbOverlay').classList.remove('hidden');
 }
 function closeQB(e){if(e&&e.target!==document.getElementById('qbOverlay'))return;document.getElementById('qbOverlay').classList.add('hidden');}
-function qbCalc(){
-  const svc=document.getElementById('qbService').value;
-  const mn=QB_DUR[svc]||60,mx=mn+60;
-  const start=document.getElementById('qbStart').value,date=document.getElementById('qbDate').value;
-  if(!start||!date){document.getElementById('qbEstimate').textContent='กรุณาเลือกวันที่และเวลาเริ่ม';return;}
-  const startM=timeToMin(start);
-  const endMin=minToTime(startM+mn),endMax=minToTime(startM+mx);
-  const endRange=endMin===endMax?endMin:endMin+'–'+endMax;
-  const over=startM+mx>20*60;
-  document.getElementById('qbEstimate').innerHTML=`⏱ ประมาณ ${mn/60}–${mx/60} ชั่วโมง &nbsp;·&nbsp; รับกลับประมาณ <strong>${endRange} น.</strong>`+(over?'<br><span style="color:#c05050;font-size:11px">⚠️ อาจเกินเวลาปิดร้าน 20:00</span>':'');
-}
+
 async function saveQuickBooking(){
   const errEl=document.getElementById('qbErr');errEl.classList.remove('visible');
-  const name=document.getElementById('qbName').value.trim(),phone=document.getElementById('qbPhone').value.trim();
-  const pet=document.getElementById('qbPet').value.trim(),petType=document.getElementById('qbType').value;
-  const svcVal=document.getElementById('qbService').value,groomer=document.getElementById('qbGroomer').value;
-  const date=document.getElementById('qbDate').value,start=document.getElementById('qbStart').value;
-  if(!name||!phone||!pet||!date||!start){errEl.textContent='กรุณากรอกข้อมูลให้ครบถ้วน';errEl.classList.add('visible');return;}
+  const name=document.getElementById('qbName').value.trim();
+  const phone=document.getElementById('qbPhone').value.trim();
+  const groomer=document.getElementById('qbGroomer').value;
+  const date=document.getElementById('qbDate').value;
+  const start=document.getElementById('qbStart').value;
+  if(!name||!phone||!date||!start){errEl.textContent='กรุณากรอกข้อมูลให้ครบถ้วน';errEl.classList.add('visible');return;}
+  if(qbPets.some(p=>!p.name.trim())){errEl.textContent='กรุณากรอกชื่อน้องให้ครบทุกตัว';errEl.classList.add('visible');return;}
   if(new Date(date+'T12:00:00').getDay()===1){errEl.textContent='วันจันทร์ร้านปิด';errEl.classList.add('visible');return;}
   const startM=timeToMin(start);
   if(startM<9*60||startM>=20*60){errEl.textContent='เวลาเริ่มต้องอยู่ระหว่าง 09:00–19:59';errEl.classList.add('visible');return;}
-  const mn=QB_DUR[svcVal]||60,mx=mn+60;
-  if(startM+mx>20*60){errEl.textContent='เวลานี้อาจเกินเวลาปิดร้าน (20:00)';errEl.classList.add('visible');return;}
-  const endTimeMin=minToTime(startM+mn),endTimeMax=minToTime(startM+mx);
-  const svcLabels={'bath':'อาบน้ำ','bath_clipper':'อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','bath_scissor':'อาบน้ำ + ตัดขน (กรรไกร)'};
+  const dur=60,endTime=minToTime(startM+dur);
+  const petName=qbPets.map(p=>p.name.trim()).join(' · ');
+  const service=qbPets.map(p=>p.service).join(' | ');
+  const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
+  const notes=qbPets.length>1?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),petType:p.petType,service:p.service,addons:p.addons}))}):'' ;
   const newBk={
     id:'QB-'+Date.now(),
-    customerName:name, phone, petName:pet, petType,
+    customerName:name, phone,
+    petName, petType:qbPets[0].petType,
     weightRange:'', coatType:'',
-    service:svcLabels[svcVal]||svcVal,
-    addOns:[], estimatedPriceMin:0, estimatedPriceMax:0,
-    estimatedDurationMin:mn, estimatedDurationMax:mx,
+    service, addOns:allAddons,
+    estimatedPriceMin:0, estimatedPriceMax:0,
+    estimatedDurationMin:dur, estimatedDurationMax:dur,
     date, startTime:start,
-    endTimeMin, endTimeMax, endTime:endTimeMax,
+    endTimeMin:endTime, endTimeMax:endTime, endTime,
     groomerId:groomer, status:'ยืนยันแล้ว',
-    notes:'', createdAt:new Date().toISOString()
+    notes, createdAt:new Date().toISOString()
   };
-  const clash=bookings.filter(b=>b.date===date&&b.groomerId===groomer&&b.status!=='ยกเลิก'&&overlaps(b.startTime,b.estimatedDurationMax,start,mx));
-  if(clash.length){errEl.textContent='ช่วงเวลาดังกล่าวชนกับการจองของช่างคนนี้';errEl.classList.add('visible');return;}
-  // Save to Supabase (or localStorage fallback)
   if(dbOnline){
-    try {
-      const res = await fetch(SB_URL + '/rest/v1/bookings',
-        { method:'POST', headers:sbHeaders(), body:JSON.stringify(toRow(newBk)) });
-      if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+': '+t); }
-      console.log('Quick booking saved to Supabase:', newBk.id);
-    } catch(err){
-      console.error('saveQuickBooking Supabase error:', err.message);
-      showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');
-      return;
-    }
-  } else {
-    // Offline fallback
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+    try{
+      const res=await fetch(SB_URL+'/rest/v1/bookings',{method:'POST',headers:sbHeaders(),body:JSON.stringify(toRow(newBk))});
+      if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t);}
+    }catch(err){showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
+  }else{
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(bookings));}catch(e){}
   }
   bookings.push(newBk);
   document.getElementById('qbOverlay').classList.add('hidden');
