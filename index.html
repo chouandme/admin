@@ -648,6 +648,7 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
     <div class="qb-row"><label>ช่าง</label><select id="qbGroomer"></select></div>
     <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date"></div>
     <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="19:00" step="900"></div>
+    <div class="qb-row"><label>หมายเหตุ</label><input id="qbNotes" type="text" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></div>
     <div class="qb-err" id="qbErr"></div>
     <div class="qb-btns">
       <button class="qb-save" onclick="saveQuickBooking()">✓ บันทึกการจอง</button>
@@ -2150,9 +2151,14 @@ function openModal(id){
   let multiPet=null,plainNotes='';
   try{
     const parsed=JSON.parse(bk.notes||'');
-    if(parsed&&parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
-    else if(parsed&&'breed' in parsed) plainNotes=''; // QB breed JSON — suppress, shown in block title
-    else plainNotes=bk.notes||'';
+    if(parsed&&parsed.petCount&&Array.isArray(parsed.pets)){
+      multiPet=parsed;
+      plainNotes=(parsed.notes||'').trim(); // extract embedded text notes if present
+    } else if(parsed&&'breed' in parsed){
+      plainNotes=(parsed.notes||'').trim(); // suppress breed JSON but keep any embedded notes
+    } else {
+      plainNotes=bk.notes||'';
+    }
   }catch(e){plainNotes=bk.notes||'';}
 
   // Title
@@ -2259,6 +2265,7 @@ function openQuickBooking(){
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
+  document.getElementById('qbNotes').value='';
   document.getElementById('qbErr').classList.remove('visible');
   renderQbPets();
   document.getElementById('qbOverlay').classList.remove('hidden');
@@ -2281,9 +2288,21 @@ async function saveQuickBooking(){
   const petName=qbPets.map(p=>p.name.trim()).join(' · ');
   const service=qbPets.map(p=>p.service).join(' | ');
   const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
-  const notes=qbPets.length>1
-    ?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))})
-    :((qbPets[0].breed||'').trim()?JSON.stringify({breed:qbPets[0].breed.trim()}):'');
+  const qbNotesText=(document.getElementById('qbNotes').value||'').trim();
+  let notes;
+  if(qbPets.length>1){
+    const obj={petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))};
+    if(qbNotesText)obj.notes=qbNotesText;
+    notes=JSON.stringify(obj);
+  } else {
+    const haBreed=(qbPets[0].breed||'').trim();
+    if(haBreed||qbNotesText){
+      const obj={};
+      if(haBreed)obj.breed=haBreed;
+      if(qbNotesText)obj.notes=qbNotesText;
+      notes=JSON.stringify(obj);
+    } else { notes=''; }
+  }
   const newBk={
     id:'QB-'+Date.now(),
     customerName:name, phone,
