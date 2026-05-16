@@ -1591,6 +1591,7 @@ function renderWeekly(){
           onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
           <button class="card-cancel-btn" draggable="false" onmousedown="event.stopPropagation()" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
           <div class="week-bk-title">${b.petName}</div>
+          ${(()=>{const br=getBkBreed(b);return br?`<div class="week-bk-sub" style="opacity:.65">${br}</div>`:''})()}
           <div class="week-bk-sub">${b.customerName}</div>
           <div class="week-bk-time">${b.startTime}–${b.endTime||''}</div>
           ${badges?`<div>${badges}</div>`:''}
@@ -1747,7 +1748,7 @@ function renderDaily(){
       blocks+=`<div class="daily-bk-block ${cls}${hl}" data-id="${b.id}" data-groomer="${groomer}" style="top:${top}px;height:${h}px;${posStyle}${dim}">
         <div class="resize-handle resize-handle-top" data-resize="top" data-id="${b.id}" data-groomer="${groomer}"></div>
         <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
-        <div class="daily-bk-title">${b.petName} · ${b.customerName}</div>
+        <div class="daily-bk-title">${b.petName}${(()=>{const br=getBkBreed(b);return br?' · '+br:''})()}</div>
         ${badges?`<div style="margin-top:2px">${badges}</div>`:''}
         <div class="daily-bk-sub">${b.service}</div>
         <div class="daily-bk-time-badge">${b.startTime}–${b.endTime||''}</div>
@@ -1941,6 +1942,15 @@ function renderFlagRow(bk){
   el.appendChild(flagBtn('noshow','noshow','⚠️','No-show',f.noshow));
   el.appendChild(flagBtn('late','late','⏰','มาสาย',f.late));
   el.appendChild(flagBtn('cancel-flag','cancel','↩','ยกเลิก',f.cancel));
+}
+function getBkBreed(bk){
+  if(!bk.notes)return'';
+  try{
+    const n=JSON.parse(bk.notes);
+    if(n.breed)return n.breed;
+    if(n.pets&&n.pets.length)return n.pets.map(p=>p.breed||'').filter(Boolean).join(' · ');
+  }catch(e){}
+  return'';
 }
 function getBadgesHtml(phone){
   if(!phone)return'';
@@ -2237,7 +2247,9 @@ async function saveQuickBooking(){
   const petName=qbPets.map(p=>p.name.trim()).join(' · ');
   const service=qbPets.map(p=>p.service).join(' | ');
   const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
-  const notes=qbPets.length>1?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))}):'';
+  const notes=qbPets.length>1
+    ?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))})
+    :(qbPets[0].breed?JSON.stringify({breed:qbPets[0].breed.trim()}):'');
   const newBk={
     id:'QB-'+Date.now(),
     customerName:name, phone,
