@@ -2172,7 +2172,7 @@ function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))
 // QUICK BOOKING
 // QUICK BOOKING — multi-pet, fixed 1-hour block
 let qbPets=[];
-const QB_SERVICES=['อาบน้ำ','อาบน้ำแมว','อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','อาบน้ำ + ตัดขน (กรรไกร)'];
+const QB_SERVICES={dog:['อาบน้ำสุนัข','อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','อาบน้ำ + ตัดขน (กรรไกร)'],cat:['อาบน้ำแมว','อาบน้ำ + ตัดขน (กรรไกร)']};
 const QB_ADDONS=['สปา','แชมพูยา','ขจัดคราบมัน','ทรีตเมนต์','แปรงฟัน','สางขนสองชั้น','สางขนสังกะตัง'];
 
 function renderQbPets(){
@@ -2180,7 +2180,9 @@ function renderQbPets(){
   const btn=document.getElementById('qbAddPetBtn');
   if(btn)btn.style.display=qbPets.length>=4?'none':'';
   c.innerHTML=qbPets.map((p,i)=>{
-    const svcs=QB_SERVICES.map(s=>`<option value="${s}"${p.service===s?' selected':''}>${s}</option>`).join('');
+    const svcList=QB_SERVICES[p.petType]||QB_SERVICES.dog;
+    if(!svcList.includes(p.service))p.service=svcList[0];
+    const svcs=svcList.map(s=>`<option value="${s}"${p.service===s?' selected':''}>${s}</option>`).join('');
     const addons=QB_ADDONS.map(a=>`<label class="qb-addon-item"><input type="checkbox"${p.addons.includes(a)?' checked':''} onchange="qbToggleAddon(${i},'${a}',this.checked)"> ${a}</label>`).join('');
     return`<div class="qb-pet-card">
       <div class="qb-pet-header">
@@ -2188,7 +2190,7 @@ function renderQbPets(){
         ${qbPets.length>1?`<button class="qb-pet-remove" onclick="removeQbPet(${i})">×</button>`:''}
       </div>
       <div class="qb-row"><label>ชื่อน้อง</label><input type="text" value="${p.name}" placeholder="ชื่อสัตว์เลี้ยง" oninput="qbPets[${i}].name=this.value"></div>
-      <div class="qb-row"><label>ประเภท</label><select onchange="qbPets[${i}].petType=this.value"><option value="dog"${p.petType==='dog'?' selected':''}>🐕 สุนัข</option><option value="cat"${p.petType==='cat'?' selected':''}>🐈 แมว</option></select></div>
+      <div class="qb-row"><label>ประเภท</label><select onchange="qbPets[${i}].petType=this.value;qbPets[${i}].service='';renderQbPets()"><option value="dog"${p.petType==='dog'?' selected':''}>🐕 สุนัข</option><option value="cat"${p.petType==='cat'?' selected':''}>🐈 แมว</option></select></div>
       <div class="qb-row"><label>บริการ</label><select onchange="qbPets[${i}].service=this.value">${svcs}</select></div>
       <div class="qb-section-label">บริการเสริม</div>
       <div class="qb-addon-grid">${addons}</div>
@@ -2208,7 +2210,7 @@ function qbToggleAddon(i,addon,checked){
   else{qbPets[i].addons=qbPets[i].addons.filter(a=>a!==addon);}
 }
 function openQuickBooking(){
-  qbPets=[{name:'',petType:'dog',service:'อาบน้ำ',addons:[]}];
+  qbPets=[{name:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]}];
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
