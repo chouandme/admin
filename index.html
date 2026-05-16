@@ -2118,7 +2118,7 @@ function openModal(id){
   try{
     const parsed=JSON.parse(bk.notes||'');
     if(parsed&&parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
-    else if(parsed&&parsed.breed) plainNotes=''; // single-pet QB breed — shown via getBkBreed, not notes
+    else if(parsed&&'breed' in parsed) plainNotes=''; // QB breed JSON — suppress, shown in block title
     else plainNotes=bk.notes||'';
   }catch(e){plainNotes=bk.notes||'';}
 
@@ -2142,7 +2142,7 @@ function openModal(id){
       const addonsStr=p.addons&&p.addons.length?p.addons.join(', '):'–';
       const pStr=p.priceMin===p.priceMax?'฿'+(p.priceMin||0).toLocaleString():'฿'+(p.priceMin||0).toLocaleString()+'–฿'+(p.priceMax||0).toLocaleString();
       return`<div class="pet-card">
-        <div class="pet-card-name">${icon} ${p.name}</div>
+        <div class="pet-card-name">${icon} ${p.name}${p.breed?` <span style="font-weight:400;font-size:11px;opacity:.7">(${p.breed})</span>`:''}</div>
         <div class="pet-card-row">${p.weight||''} · ${p.coat||''}</div>
         <div class="pet-card-row"><strong>${p.service||''}</strong></div>
         ${addonsStr!=='–'?`<div class="pet-card-row">+ ${addonsStr}</div>`:''}
@@ -2250,7 +2250,7 @@ async function saveQuickBooking(){
   const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
   const notes=qbPets.length>1
     ?JSON.stringify({petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))})
-    :(qbPets[0].breed?JSON.stringify({breed:qbPets[0].breed.trim()}):'');
+    :((qbPets[0].breed||'').trim()?JSON.stringify({breed:qbPets[0].breed.trim()}):'');
   const newBk={
     id:'QB-'+Date.now(),
     customerName:name, phone,
