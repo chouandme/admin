@@ -711,10 +711,16 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
       <div class="line-msg-title">💬 ข้อความ LINE</div>
       <button onclick="closeLineMsg(null)" style="background:var(--cream);border:2px solid var(--sand);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
     </div>
-    <div class="line-msg-tabs">
-      <button class="line-msg-tab active" onclick="switchMsgTab('confirm',this)">✅ ยืนยันคิว</button>
-      <button class="line-msg-tab" onclick="switchMsgTab('remind',this)">⏰ เตือนก่อน 1 ชม.</button>
-      <button class="line-msg-tab" onclick="switchMsgTab('pickup',this)">🎉 รับน้องได้แล้ว</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
+      <div class="line-msg-tabs" style="margin-bottom:0;flex:1" id="lineMsgTypeTabs">
+        <button class="line-msg-tab active" onclick="switchMsgTab('confirm',this)">✅ ยืนยันคิว</button>
+        <button class="line-msg-tab" onclick="switchMsgTab('remind',this)">⏰ เตือนก่อน 1 ชม.</button>
+        <button class="line-msg-tab" onclick="switchMsgTab('pickup',this)">🎉 รับน้องได้แล้ว</button>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button id="langTh" class="line-msg-tab active" onclick="switchMsgLang('th',this)" style="padding:6px 10px;font-size:11px">🇹🇭 ไทย</button>
+        <button id="langEn" class="line-msg-tab" onclick="switchMsgLang('en',this)" style="padding:6px 10px;font-size:11px">🇬🇧 EN</button>
+      </div>
     </div>
     <textarea class="line-msg-text" id="lineMsgText" rows="5" readonly></textarea>
     <div class="line-msg-btns">
@@ -1964,47 +1970,74 @@ function getBadgesHtml(phone){
 // ══════════════════════════════════════════
 // LINE MESSAGE TEMPLATES
 // ══════════════════════════════════════════
-let lineMsgBkId=null, currentMsgType='confirm';
+let lineMsgBkId=null, currentMsgType='confirm', currentMsgLang='th';
 
 function formatThaiDate(dateStr){
   if(!dateStr)return'';
   const d=new Date(dateStr+'T12:00:00');
   return d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
+function formatEngDate(dateStr){
+  if(!dateStr)return'';
+  const d=new Date(dateStr+'T12:00:00');
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
 
-function buildMsg(bk,type){
+function buildMsg(bk,type,lang){
+  lang=lang||currentMsgLang;
   const name=bk.customerName||'ลูกค้า';
   const pet=bk.petName||'น้อง';
-  const date=formatThaiDate(bk.date);
   const time=bk.startTime||'';
   const end=bk.endTimeMax||bk.endTime||'';
-  const endDisp=end?` (รับกลับประมาณ ${end} น.)`:'';
-  if(type==='confirm')
-    return `สวัสดีค่ะคุณ${name} 🐾\nChou&Me ขอยืนยันคิว Grooming ของน้อง${pet}\nวันที่ ${date}\nเวลา ${time} น.${endDisp}\nหากมีข้อสงสัยสอบถามได้เลยนะคะ 😊`;
-  if(type==='remind')
-    return `สวัสดีค่ะคุณ${name} 🐾\nอีกประมาณ 1 ชั่วโมงจะถึงคิว Grooming ของน้อง${pet}\nที่ Chou&Me แล้วนะคะ ⏰\nเวลา ${time} น. วันนี้ค่ะ`;
-  if(type==='pickup')
-    return `สวัสดีค่ะคุณ${name} 🐾\nน้อง${pet} Grooming เสร็จเรียบร้อยแล้วค่ะ ✨\nสามารถมารับได้เลยนะคะ 😊\nขอบคุณที่ใช้บริการ Chou&Me ค่ะ 🙏`;
+  if(lang==='en'){
+    const date=formatEngDate(bk.date);
+    const endDisp=end?` (estimated pick-up around ${end})`:'';
+    if(type==='confirm')
+      return `Hello, ${name}! 🐾\nChou&Me would like to confirm your grooming appointment for ${pet}.\nDate: ${date}\nTime: ${time}${endDisp}\nPlease don't hesitate to contact us if you have any questions 😊`;
+    if(type==='remind')
+      return `Hello, ${name}! 🐾\nJust a reminder that ${pet}'s grooming appointment at Chou&Me is in about 1 hour ⏰\nTime: ${time} today`;
+    if(type==='pickup')
+      return `Hello, ${name}! 🐾\n${pet}'s grooming session is all done! ✨\nPlease come pick up your furry one at your convenience 😊\nThank you for choosing Chou&Me 🙏`;
+  } else {
+    const date=formatThaiDate(bk.date);
+    const endDisp=end?` (รับกลับประมาณ ${end} น.)`:'';
+    if(type==='confirm')
+      return `สวัสดีค่ะคุณ${name} 🐾\nChou&Me ขอยืนยันคิว Grooming ของน้อง${pet}\nวันที่ ${date}\nเวลา ${time} น.${endDisp}\nหากมีข้อสงสัยสอบถามได้เลยนะคะ 😊`;
+    if(type==='remind')
+      return `สวัสดีค่ะคุณ${name} 🐾\nอีกประมาณ 1 ชั่วโมงจะถึงคิว Grooming ของน้อง${pet}\nที่ Chou&Me แล้วนะคะ ⏰\nเวลา ${time} น. วันนี้ค่ะ`;
+    if(type==='pickup')
+      return `สวัสดีค่ะคุณ${name} 🐾\nน้อง${pet} Grooming เสร็จเรียบร้อยแล้วค่ะ ✨\nสามารถมารับได้เลยนะคะ 😊\nขอบคุณที่ใช้บริการ Chou&Me ค่ะ 🙏`;
+  }
   return'';
 }
 
 function openLineMsg(type){
   const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
   lineMsgBkId=modalBkId; currentMsgType=type;
-  // Set active tab
-  document.querySelectorAll('.line-msg-tab').forEach(t=>{
+  // Sync type tabs
+  document.querySelectorAll('#lineMsgTypeTabs .line-msg-tab').forEach(t=>{
     const tabType=t.getAttribute('onclick').match(/'(\w+)'/)?.[1];
     t.classList.toggle('active',tabType===type);
   });
+  // Sync lang tabs
+  document.getElementById('langTh').classList.toggle('active',currentMsgLang==='th');
+  document.getElementById('langEn').classList.toggle('active',currentMsgLang==='en');
   document.getElementById('lineMsgText').value=buildMsg(bk,type);
   document.getElementById('lineMsgOverlay').classList.remove('hidden');
 }
 function switchMsgTab(type,btn){
   currentMsgType=type;
-  document.querySelectorAll('.line-msg-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#lineMsgTypeTabs .line-msg-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   const bk=bookings.find(b=>b.id===lineMsgBkId);
   if(bk)document.getElementById('lineMsgText').value=buildMsg(bk,type);
+}
+function switchMsgLang(lang,btn){
+  currentMsgLang=lang;
+  document.getElementById('langTh').classList.toggle('active',lang==='th');
+  document.getElementById('langEn').classList.toggle('active',lang==='en');
+  const bk=bookings.find(b=>b.id===lineMsgBkId);
+  if(bk)document.getElementById('lineMsgText').value=buildMsg(bk,currentMsgType);
 }
 function copyLineMsg(){
   const txt=document.getElementById('lineMsgText').value;
