@@ -2153,8 +2153,8 @@ function openModal(id){
     const parsed=JSON.parse(bk.notes||'');
     if(parsed&&typeof parsed==='object'){
       if(parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
-      // For any JSON object: extract embedded .notes text; never show raw JSON
-      plainNotes=(parsed.notes||'').trim();
+      // Try common keys the booking form might use for text notes
+      plainNotes=(parsed.notes||parsed.remark||parsed.note||parsed.special_request||parsed.comment||'').toString().trim();
     } else {
       plainNotes=bk.notes||''; // primitive JSON value — treat as plain text
     }
@@ -2203,13 +2203,8 @@ function openModal(id){
     <div class="modal-row"><span class="ml">เบอร์โทร</span><span class="mv">${bk.phone||'–'}</span></div>
     ${petSection}
     <div class="modal-row"><span class="ml">ราคาประมาณ</span><span class="mv">${priceStr}</span></div>
-    <div style="margin-top:10px">
-      <div style="font-size:11px;color:var(--text-mid);margin-bottom:5px;font-weight:600">หมายเหตุ</div>
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <textarea id="modalNotesInput" rows="2" placeholder="เพิ่มหมายเหตุ..." style="flex:1;padding:10px 12px;border:2px solid var(--sand);border-radius:12px;font-family:'Mitr',sans-serif;font-size:13px;color:var(--text-dark);background:var(--cream);resize:vertical;outline:none;transition:border .2s;line-height:1.5">${plainNotes}</textarea>
-        <button onclick="saveModalNotes()" style="padding:9px 14px;background:var(--brown);color:#fff;border:none;border-radius:12px;font-family:'Quicksand',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">บันทึก</button>
-      </div>
-    </div>`;
+    ${plainNotes?`<div class="modal-row"><span class="ml">หมายเหตุ</span><span class="mv">${plainNotes}</span></div>`:''}`;
+
   const stRow=document.getElementById('statusToggleRow');
   stRow.innerHTML=STATUSES.map(s=>`<button class="status-toggle-btn ${s==='รอยืนยัน'?'waiting':'confirmed'}${bk.status===s?' active':''}" onclick="setStatus('${s}')">${s==='รอยืนยัน'?'⏳':'✅'} ${s}</button>`).join('');
   buildHistorySection(bk);
@@ -2223,22 +2218,6 @@ function setStatus(s){
   renderCurrentView();buildAdminStats();
 }
 function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.add('hidden');}
-
-function saveModalNotes(){
-  const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
-  const newText=(document.getElementById('modalNotesInput').value||'').trim();
-  let newNotesStr;
-  try{
-    const parsed=JSON.parse(bk.notes||'');
-    if(parsed&&typeof parsed==='object'){
-      if(newText)parsed.notes=newText; else delete parsed.notes;
-      newNotesStr=JSON.stringify(parsed);
-    } else { newNotesStr=newText; }
-  }catch(e){ newNotesStr=newText; }
-  bk.notes=newNotesStr;
-  updateBooking(bk.id,{notes:newNotesStr});
-  showToast('บันทึกหมายเหตุแล้ว ✓','success');
-}
 
 // QUICK BOOKING
 // QUICK BOOKING — multi-pet, fixed 1-hour block
