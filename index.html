@@ -243,6 +243,7 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
     6px 6px 8px rgba(0, 0, 0, 0.03),
     inset 1px 2px 1px rgba(255,255,255,0.85),
     inset -1px -2px 2px color-mix(in oklab, var(--deep) 25%, transparent);}
+.st-blocked{background:repeating-linear-gradient(135deg,#e8e4de 0px,#e8e4de 7px,#d8d4ce 7px,#d8d4ce 14px);border-top:8px solid #b8b0a4;color:#7a7068;font-family:'Sarabun',sans-serif;font-weight:500;}
 .status-toggle-row{display:flex;gap:8px;margin-top:14px; }
 .status-toggle-btn{flex:1;padding:10px 6px;border-radius:14px;border:0px solid transparent;
   font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;
@@ -635,23 +636,32 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 <div class="qb-overlay hidden" id="qbOverlay" onclick="closeQB(event)">
   <div class="qb-sheet">
     <div class="modal-handle"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div class="qb-title">＋ จองด่วน</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="qb-title" id="qbTitleLabel">＋ จองด่วน</div>
       <button onclick="closeQB(null)" style="background:var(--cream);border:2px solid var(--sand);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text-mid);display:flex;align-items:center;justify-content:center;">×</button>
     </div>
-    <div class="qb-row"><label>ชื่อลูกค้า</label><input id="qbName" type="text" placeholder="ชื่อ-สกุล"></div>
-    <div class="qb-row"><label>เบอร์โทร</label><input id="qbPhone" type="tel" placeholder="0812345678"></div>
-    <hr class="qb-divider">
-    <div id="qbPetsList"></div>
-    <button class="qb-add-pet-btn" id="qbAddPetBtn" onclick="addQbPet()">＋ เพิ่มน้อง</button>
-    <hr class="qb-divider">
+    <!-- Mode toggle -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="qbModeBook" onclick="switchQbMode('booking')" style="flex:1;padding:8px;border-radius:var(--radius-pill);border:2px solid var(--brown);background:var(--brown);color:#fff;font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s">📋 จองด่วน</button>
+      <button id="qbModeBlock" onclick="switchQbMode('block')" style="flex:1;padding:8px;border-radius:var(--radius-pill);border:2px solid var(--sand);background:var(--cream);color:var(--text-mid);font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s">🚫 ปิดคิว</button>
+    </div>
+    <!-- Booking-only fields -->
+    <div id="qbBookingFields">
+      <div class="qb-row"><label>ชื่อลูกค้า</label><input id="qbName" type="text" placeholder="ชื่อ-สกุล"></div>
+      <div class="qb-row"><label>เบอร์โทร</label><input id="qbPhone" type="tel" placeholder="0812345678"></div>
+      <hr class="qb-divider">
+      <div id="qbPetsList"></div>
+      <button class="qb-add-pet-btn" id="qbAddPetBtn" onclick="addQbPet()">＋ เพิ่มน้อง</button>
+      <hr class="qb-divider">
+    </div>
     <div class="qb-row"><label>ช่าง</label><select id="qbGroomer"></select></div>
     <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date"></div>
-    <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="19:00" step="900"></div>
-    <div class="qb-row"><label>หมายเหตุ</label><input id="qbNotes" type="text" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></div>
+    <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="20:00" step="900"></div>
+    <div class="qb-row" id="qbEndRow" style="display:none"><label>เวลาสิ้นสุด</label><input id="qbEnd" type="time" min="09:00" max="21:00" step="900"></div>
+    <div class="qb-row"><label id="qbNotesLabel">หมายเหตุ</label><input id="qbNotes" type="text" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></div>
     <div class="qb-err" id="qbErr"></div>
     <div class="qb-btns">
-      <button class="qb-save" onclick="saveQuickBooking()">✓ บันทึกการจอง</button>
+      <button class="qb-save" id="qbSaveBtn" onclick="saveQuickBooking()">✓ บันทึกการจอง</button>
       <button class="qb-cancel-btn" onclick="closeQB(null)">ยกเลิก</button>
     </div>
   </div>
@@ -1478,7 +1488,7 @@ function updateSearchCount(){
 
 // STATUS
 const STATUSES=['รอยืนยัน','ยืนยันแล้ว'];
-const STATUS_CLASS={'รอยืนยัน':'st-waiting','ยืนยันแล้ว':'st-confirmed'};
+const STATUS_CLASS={'รอยืนยัน':'st-waiting','ยืนยันแล้ว':'st-confirmed','ปิดคิว':'st-blocked'};
 
 // CONSTANTS — 15-min snap
 const HOUR_START=9,HOUR_END=20,SLOT_PX=30;
@@ -1545,7 +1555,7 @@ function updateWeekLabel(){
 }
 function buildAdminStats(){
   const today=dateToStr(new Date()),weekDays=getWeekDates(adminWeekOffset).map(dateToStr);
-  const active=b=>b.status!=='ยกเลิก';
+  const active=b=>b.status!=='ยกเลิก'&&b.status!=='ปิดคิว';
   const todayBks=bookings.filter(b=>b.date===today&&active(b));
   const weekBks=bookings.filter(b=>weekDays.includes(b.date)&&active(b));
   const todayRev=todayBks.reduce((a,b)=>a+(b.estimatedPriceMin+b.estimatedPriceMax)/2,0);
@@ -1640,14 +1650,17 @@ function renderWeekly(){
         const badges=getBadgesHtml(b.phone);
         const p=calcWeekBlockPos(b,allBks,gsW);
         const pos=`left:${p.left};${p.right!=='auto'?'right:'+p.right+';':''}${p.width!=='auto'?'width:'+p.width+';':''}z-index:${p.zIndex};`;
+        const isBlocked=b.status==='ปิดคิว';
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
-          onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
-          <button class="card-cancel-btn" draggable="false" onmousedown="event.stopPropagation()" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
-          <div class="week-bk-title">${b.petName}</div>
+          onclick="${isBlocked?`askCancel(event,'${b.id}','ปิดคิว')`:`openModal('${b.id}')`}" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
+          <button class="card-cancel-btn" draggable="false" onmousedown="event.stopPropagation()" onclick="askCancel(event,'${b.id}','${isBlocked?'ปิดคิว':b.petName}')">×</button>
+          ${isBlocked
+            ?`<div class="week-bk-title">🚫 ปิดคิว</div>${b.customerName?`<div class="week-bk-sub">${b.customerName}</div>`:''}`
+            :`<div class="week-bk-title">${b.petName}</div>
           ${(()=>{const br=getBkBreed(b);return br?`<div class="week-bk-sub" style="opacity:.65">${br}</div>`:''})()}
-          <div class="week-bk-sub">${b.customerName}</div>
+          <div class="week-bk-sub">${b.customerName}</div>`}
           <div class="week-bk-time">${b.startTime}–${b.endTime||''}</div>
-          ${badges?`<div>${badges}</div>`:''}
+          ${!isBlocked&&badges?`<div>${badges}</div>`:''}
           <div class="resize-handle resize-handle-bottom" data-resize="bottom" data-id="${b.id}" data-groomer="${b.groomerId||''}" onclick="event.stopPropagation()"></div>
         </div>`;
       });
@@ -1798,12 +1811,15 @@ function renderDaily(){
       const badges=getBadgesHtml(b.phone);
       const lane=colLane[b.id]||0,lOff=lane*10;
       const posStyle=lane>0?`left:${3+lOff}px;right:3px;z-index:${3+lane};`:'';
+      const isBlocked=b.status==='ปิดคิว';
       blocks+=`<div class="daily-bk-block ${cls}${hl}" data-id="${b.id}" data-groomer="${groomer}" style="top:${top}px;height:${h}px;${posStyle}${dim}">
         <div class="resize-handle resize-handle-top" data-resize="top" data-id="${b.id}" data-groomer="${groomer}"></div>
-        <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
-        <div class="daily-bk-title">${b.petName}${(()=>{const br=getBkBreed(b);return br?' · '+br:''})()}</div>
+        <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${isBlocked?'ปิดคิว':b.petName}')">×</button>
+        ${isBlocked
+          ?`<div class="daily-bk-title">🚫 ปิดคิว</div>${b.customerName?`<div class="daily-bk-sub">${b.customerName}</div>`:''}`
+          :`<div class="daily-bk-title">${b.petName}${(()=>{const br=getBkBreed(b);return br?' · '+br:''})()}</div>
         ${badges?`<div style="margin-top:2px">${badges}</div>`:''}
-        <div class="daily-bk-sub">${b.service}</div>
+        <div class="daily-bk-sub">${b.service}</div>`}
         <div class="daily-bk-time-badge">${b.startTime}–${b.endTime||''}</div>
         <div class="resize-handle resize-handle-bottom" data-resize="bottom" data-id="${b.id}" data-groomer="${groomer}"></div>
       </div>`;
@@ -2306,13 +2322,35 @@ function qbToggleAddon(i,addon,checked){
   if(checked){if(!qbPets[i].addons.includes(addon))qbPets[i].addons.push(addon);}
   else{qbPets[i].addons=qbPets[i].addons.filter(a=>a!==addon);}
 }
+let qbMode='booking';
+function switchQbMode(mode){
+  qbMode=mode;
+  const isBlock=mode==='block';
+  document.getElementById('qbBookingFields').style.display=isBlock?'none':'';
+  document.getElementById('qbEndRow').style.display=isBlock?'':'none';
+  document.getElementById('qbNotesLabel').textContent=isBlock?'เหตุผล':'หมายเหตุ';
+  document.getElementById('qbNotes').placeholder=isBlock?'เช่น ช่างลา, ประชุม (ถ้ามี)':'หมายเหตุเพิ่มเติม (ถ้ามี)';
+  document.getElementById('qbTitleLabel').textContent=isBlock?'🚫 ปิดคิว':'＋ จองด่วน';
+  document.getElementById('qbSaveBtn').textContent=isBlock?'🚫 ปิดคิว':'✓ บันทึกการจอง';
+  const btnBook=document.getElementById('qbModeBook'),btnBlock=document.getElementById('qbModeBlock');
+  btnBook.style.background=isBlock?'var(--cream)':'var(--brown)';
+  btnBook.style.color=isBlock?'var(--text-mid)':'#fff';
+  btnBook.style.borderColor=isBlock?'var(--sand)':'var(--brown)';
+  btnBlock.style.background=isBlock?'#b8b0a4':'var(--cream)';
+  btnBlock.style.color=isBlock?'#fff':'var(--text-mid)';
+  btnBlock.style.borderColor=isBlock?'#b8b0a4':'var(--sand)';
+  document.getElementById('qbErr').classList.remove('visible');
+}
 function openQuickBooking(){
+  qbMode='booking';
   qbPets=[{name:'',breed:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]}];
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
+  document.getElementById('qbEnd').value='10:00';
   document.getElementById('qbNotes').value='';
   document.getElementById('qbErr').classList.remove('visible');
+  switchQbMode('booking');
   renderQbPets();
   document.getElementById('qbOverlay').classList.remove('hidden');
 }
@@ -2320,11 +2358,34 @@ function closeQB(e){if(e&&e.target!==document.getElementById('qbOverlay'))return
 
 async function saveQuickBooking(){
   const errEl=document.getElementById('qbErr');errEl.classList.remove('visible');
-  const name=document.getElementById('qbName').value.trim();
-  const phone=document.getElementById('qbPhone').value.trim();
   const groomer=document.getElementById('qbGroomer').value;
   const date=document.getElementById('qbDate').value;
   const start=document.getElementById('qbStart').value;
+  const qbNotesText=(document.getElementById('qbNotes').value||'').trim();
+
+  // ── ปิดคิว mode ──
+  if(qbMode==='block'){
+    const endVal=document.getElementById('qbEnd').value;
+    if(!date||!start||!endVal){errEl.textContent='กรุณากรอกวันที่และเวลาให้ครบ';errEl.classList.add('visible');return;}
+    const startM=timeToMin(start),endM=timeToMin(endVal);
+    if(endM<=startM){errEl.textContent='เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม';errEl.classList.add('visible');return;}
+    const dur=endM-startM;
+    const newBk={id:'BLK-'+Date.now(),customerName:qbNotesText,phone:'',petName:'ปิดคิว',petType:'',weightRange:'',coatType:'',service:'',addOns:[],estimatedPriceMin:0,estimatedPriceMax:0,estimatedDurationMin:dur,estimatedDurationMax:dur,date,startTime:start,endTimeMin:minToTime(endM),endTimeMax:minToTime(endM),endTime:minToTime(endM),groomerId:groomer,status:'ปิดคิว',notes:'',createdAt:new Date().toISOString()};
+    if(dbOnline){
+      try{
+        const res=await sbFetch(SB_URL+'/rest/v1/bookings',{method:'POST',body:JSON.stringify(toRow(newBk))});
+        if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t);}
+      }catch(err){if(err.message!=='session_expired')showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
+    }
+    bookings.push(newBk);
+    document.getElementById('qbOverlay').classList.add('hidden');
+    showToast('ปิดคิวเรียบร้อยแล้ว ✓','success');
+    buildAdminStats();renderCurrentView();return;
+  }
+
+  // ── จองด่วน mode ──
+  const name=document.getElementById('qbName').value.trim();
+  const phone=document.getElementById('qbPhone').value.trim();
   if(!name||!phone||!date||!start){errEl.textContent='กรุณากรอกข้อมูลให้ครบถ้วน';errEl.classList.add('visible');return;}
   if(qbPets.some(p=>!p.name.trim())){errEl.textContent='กรุณากรอกชื่อน้องให้ครบทุกตัว';errEl.classList.add('visible');return;}
   if(new Date(date+'T12:00:00').getDay()===1){errEl.textContent='วันจันทร์ร้านปิด';errEl.classList.add('visible');return;}
@@ -2334,7 +2395,6 @@ async function saveQuickBooking(){
   const petName=qbPets.map(p=>p.name.trim()).join(' · ');
   const service=qbPets.map(p=>p.service).join(' | ');
   const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
-  const qbNotesText=(document.getElementById('qbNotes').value||'').trim();
   let notes;
   if(qbPets.length>1){
     const obj={petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))};
