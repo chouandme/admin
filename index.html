@@ -930,10 +930,12 @@ async function doLogin(){
   const val=document.getElementById('pwInput').value,errEl=document.getElementById('loginError');
   if(val===ADMIN_PASSWORD){
     try{
+      const ac=new AbortController();const tid=setTimeout(()=>ac.abort(),5000);
       const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{
         method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
-        body:JSON.stringify({email:ADMIN_EMAIL,password:val})
+        body:JSON.stringify({email:ADMIN_EMAIL,password:val}),signal:ac.signal
       });
+      clearTimeout(tid);
       const d=await r.json();
       if(d.access_token){
         SB_TOKEN=d.access_token;
