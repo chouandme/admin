@@ -926,27 +926,23 @@ function togglePw(){
   else{i.type='password';eo.style.display='block';ef.style.display='none';}
   i.focus();
 }
-async function doLogin(){
+function doLogin(){
   const val=document.getElementById('pwInput').value,errEl=document.getElementById('loginError');
   if(val===ADMIN_PASSWORD){
-    try{
-      const ac=new AbortController();const tid=setTimeout(()=>ac.abort(),5000);
-      const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{
-        method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
-        body:JSON.stringify({email:ADMIN_EMAIL,password:val}),signal:ac.signal
-      });
-      clearTimeout(tid);
-      const d=await r.json();
-      if(d.access_token){
-        SB_TOKEN=d.access_token;
-        try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}
-        if(d.refresh_token){try{sessionStorage.setItem('sb_refresh',d.refresh_token);}catch(e){}}
-      }
-    }catch(e){console.warn('Supabase auth failed, using anon token:',e.message);}
     sessionStorage.setItem(SESSION_KEY,'true');
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('adminDashboard').style.display='block';
     errEl.classList.remove('visible'); initAdmin();
+    // fetch Supabase token in background — does not block login
+    (()=>{const ac=new AbortController();setTimeout(()=>ac.abort(),8000);
+      fetch(SB_URL+'/auth/v1/token?grant_type=password',{
+        method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
+        body:JSON.stringify({email:ADMIN_EMAIL,password:val}),signal:ac.signal
+      }).then(r=>r.json()).then(d=>{
+        if(d.access_token){SB_TOKEN=d.access_token;
+          try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}
+          if(d.refresh_token){try{sessionStorage.setItem('sb_refresh',d.refresh_token);}catch(e){}}}
+      }).catch(e=>console.warn('Supabase auth failed, using anon token:',e.message));})();
   } else {
     errEl.classList.add('visible');
     document.getElementById('pwInput').value=''; document.getElementById('pwInput').focus();
