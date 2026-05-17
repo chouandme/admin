@@ -925,7 +925,11 @@ async function doLogin(){
         body:JSON.stringify({email:ADMIN_EMAIL,password:val})
       });
       const d=await r.json();
-      if(d.access_token){SB_TOKEN=d.access_token;try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}}
+      if(d.access_token){
+        SB_TOKEN=d.access_token;
+        try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}
+        if(d.refresh_token){try{sessionStorage.setItem('sb_refresh',d.refresh_token);}catch(e){}}
+      }
     }catch(e){console.warn('Supabase auth failed, using anon token:',e.message);}
     sessionStorage.setItem(SESSION_KEY,'true');
     document.getElementById('loginScreen').style.display='none';
@@ -966,6 +970,41 @@ function sbHeaders(extra={}){
     'Authorization': 'Bearer ' + SB_TOKEN,
     'Prefer': 'return=representation'
   }, extra);
+}
+
+async function refreshSbToken(){
+  try{
+    const rt=sessionStorage.getItem('sb_refresh');
+    if(!rt)return false;
+    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
+      body:JSON.stringify({refresh_token:rt})
+    });
+    const d=await r.json();
+    if(d.access_token){
+      SB_TOKEN=d.access_token;
+      try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}
+      if(d.refresh_token){try{sessionStorage.setItem('sb_refresh',d.refresh_token);}catch(e){}}
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+async function sbFetch(url,opts={}){
+  let res=await fetch(url,{...opts,headers:sbHeaders(opts.headers||{})});
+  if(res.status===401){
+    const ok=await refreshSbToken();
+    if(ok){
+      res=await fetch(url,{...opts,headers:sbHeaders(opts.headers||{})});
+    }
+    if(res.status===401){
+      SB_TOKEN=SB_ANON;
+      try{sessionStorage.removeItem('sb_token');sessionStorage.removeItem('sb_refresh');}catch(e){}
+      throw new Error('HTTP 401 — เซสชันหมดอายุ กรุณาล็อกอินใหม่');
+    }
+  }
+  return res;
 }
 
 // ── FIELD MAPPING ──────────────────────────
@@ -1067,11 +1106,10 @@ function setDbStatus(state, msg){
 async function loadBookings(){
   setDbStatus('loading','⏳ กำลังโหลดข้อมูล...');
   try {
-    const res = await fetch(
+    const res = await sbFetch(
       SB_URL + '/rest/v1/bookings?select=*&order=date.asc,start_time.asc',
-      { headers: sbHeaders({'Prefer':''}) }
+      { headers:{'Prefer':''} }
     );
-    if(res.status===401){SB_TOKEN=SB_ANON;try{sessionStorage.removeItem('sb_token');}catch(e){}throw new Error('HTTP 401 — session expired, please log in again');}
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     bookings.length = 0;
@@ -1120,9 +1158,9 @@ async function updateBooking(id, fields){
 
   // 3. Always try Supabase — fallback to localStorage on failure
   try {
-    const res = await fetch(
+    const res = await sbFetch(
       SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
-      { method:'PATCH', headers:sbHeaders({'Prefer':'return=minimal'}), body:JSON.stringify(partial) }
+      { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify(partial) }
     );
     if(!res.ok){
       const t = await res.text();
@@ -1139,8 +1177,8 @@ async function updateBooking(id, fields){
 // ── DELETE ─────────────────────────────────
 async function deleteBooking(id){
   try {
-    await fetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
-      { method:'DELETE', headers:sbHeaders({'Prefer':'return=minimal'}) });
+    await sbFetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
+      { method:'DELETE', headers:{'Prefer':'return=minimal'} });
   } catch(err){ console.error('deleteBooking error:', err.message); }
 }
 
@@ -2318,7 +2356,7 @@ async function saveQuickBooking(){
   };
   if(dbOnline){
     try{
-      const res=await fetch(SB_URL+'/rest/v1/bookings',{method:'POST',headers:sbHeaders(),body:JSON.stringify(toRow(newBk))});
+      const res=await sbFetch(SB_URL+'/rest/v1/bookings',{method:'POST',body:JSON.stringify(toRow(newBk))});
       if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t);}
     }catch(err){showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
   }else{
