@@ -1011,6 +1011,7 @@ async function refreshSbToken(){
     }
   }catch(e){}
   return false;
+}
 async function sbFetch(url,opts={}){
   let res=await fetch(url,{...opts,headers:sbHeaders(opts.headers||{})});
   if(res.status===401){
