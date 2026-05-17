@@ -243,6 +243,7 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
     6px 6px 8px rgba(0, 0, 0, 0.03),
     inset 1px 2px 1px rgba(255,255,255,0.85),
     inset -1px -2px 2px color-mix(in oklab, var(--deep) 25%, transparent);}
+.st-blocked{background:repeating-linear-gradient(135deg,#e8e4de 0px,#e8e4de 7px,#d8d4ce 7px,#d8d4ce 14px);border-top:8px solid #b8b0a4;color:#7a7068;font-family:'Sarabun',sans-serif;font-weight:500;}
 .status-toggle-row{display:flex;gap:8px;margin-top:14px; }
 .status-toggle-btn{flex:1;padding:10px 6px;border-radius:14px;border:0px solid transparent;
   font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;
@@ -405,13 +406,24 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 .qb-row label{font-size:12px;color:var(--text-mid);white-space:nowrap;font-weight:500;}
 .qb-row input,.qb-row select{width:100%;padding:9px 12px;border:2px solid var(--sand);border-radius:12px;font-family:'Mitr',sans-serif;font-size:13px;color:var(--text-dark);background:var(--cream);outline:none;transition:border .2s;}
 .qb-row input:focus,.qb-row select:focus{border-color:var(--brown);background:var(--white);}
-.qb-estimate{background:var(--yellow-green);border-radius:14px;padding:10px 14px;margin:12px 0;font-size:13px;color:var(--text-mid);min-height:40px;}
 .qb-err{font-size:12px;color:#c05050;font-weight:600;margin-top:6px;display:none;}
 .qb-err.visible{display:block;}
 .qb-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
 .qb-save{background:var(--brown);color:#fff;border:none;border-radius:var(--radius-pill);padding:13px;font-family:'Quicksand',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
 .qb-save:hover{background:#8a6145;}
 .qb-cancel-btn{background:var(--cream);color:var(--text-mid);border:2px solid var(--sand);border-radius:var(--radius-pill);padding:13px;font-family:'Quicksand',sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
+.qb-pet-card{border:2px solid var(--sand);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--cream);}
+.qb-pet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.qb-pet-header span{font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:var(--brown);}
+.qb-pet-remove{background:rgba(220,80,80,.12);color:#c05050;border:none;border-radius:50%;width:24px;height:24px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qb-add-pet-btn{width:100%;padding:10px;border:2px dashed var(--sand);border-radius:14px;background:transparent;color:var(--text-mid);font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all .18s;}
+.qb-add-pet-btn:hover{border-color:var(--brown);color:var(--brown);}
+.qb-section-label{font-size:11px;color:var(--text-mid);font-weight:600;margin:4px 0 4px;letter-spacing:.3px;}
+.qb-addon-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px;}
+.qb-addon-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-dark);background:var(--white);border:1.5px solid var(--sand);border-radius:99px;padding:5px 11px;cursor:pointer;transition:border .15s;}
+.qb-addon-item:has(input:checked){border-color:var(--brown);background:#f5ede6;}
+.qb-addon-item input{width:13px;height:13px;accent-color:var(--brown);cursor:pointer;}
+.qb-divider{border:none;border-top:1.5px solid var(--sand);margin:14px 0;}
 
 /* DEBUG */
 .debug-table{width:100%;border-collapse:collapse;font-size:11px;}
@@ -624,32 +636,32 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
 <div class="qb-overlay hidden" id="qbOverlay" onclick="closeQB(event)">
   <div class="qb-sheet">
     <div class="modal-handle"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div class="qb-title">＋ จองด่วน</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="qb-title" id="qbTitleLabel">＋ จองด่วน</div>
       <button onclick="closeQB(null)" style="background:var(--cream);border:2px solid var(--sand);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text-mid);display:flex;align-items:center;justify-content:center;">×</button>
     </div>
-    <div class="qb-row"><label>ชื่อลูกค้า</label><input id="qbName" type="text" placeholder="ชื่อ-สกุล"></div>
-    <div class="qb-row"><label>เบอร์โทร</label><input id="qbPhone" type="tel" placeholder="0812345678"></div>
-    <div class="qb-row"><label>ชื่อน้อง</label><input id="qbPet" type="text" placeholder="ชื่อสัตว์เลี้ยง"></div>
-    <div class="qb-row"><label>ประเภท</label>
-      <select id="qbType"><option value="dog">🐕 สุนัข</option><option value="cat">🐈 แมว</option></select>
+    <!-- Mode toggle -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="qbModeBook" onclick="switchQbMode('booking')" style="flex:1;padding:8px;border-radius:var(--radius-pill);border:2px solid var(--brown);background:var(--brown);color:#fff;font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s">📋 จองด่วน</button>
+      <button id="qbModeBlock" onclick="switchQbMode('block')" style="flex:1;padding:8px;border-radius:var(--radius-pill);border:2px solid var(--sand);background:var(--cream);color:var(--text-mid);font-family:'Quicksand',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s">🚫 ปิดคิว</button>
     </div>
-    <div class="qb-row"><label>บริการ</label>
-      <select id="qbService" onchange="qbCalc()">
-        <option value="bath">อาบน้ำ (60 นาที)</option>
-        <option value="bath_clipper">อาบน้ำ + ตัดขน ปัตตาเลี่ยน (90 นาที)</option>
-        <option value="bath_scissor">อาบน้ำ + ตัดขน กรรไกร (120 นาที)</option>
-      </select>
+    <!-- Booking-only fields -->
+    <div id="qbBookingFields">
+      <div class="qb-row"><label>ชื่อลูกค้า</label><input id="qbName" type="text" placeholder="ชื่อ-สกุล"></div>
+      <div class="qb-row"><label>เบอร์โทร</label><input id="qbPhone" type="tel" placeholder="0812345678"></div>
+      <hr class="qb-divider">
+      <div id="qbPetsList"></div>
+      <button class="qb-add-pet-btn" id="qbAddPetBtn" onclick="addQbPet()">＋ เพิ่มน้อง</button>
+      <hr class="qb-divider">
     </div>
-    <div class="qb-row"><label>ช่าง</label>
-      <select id="qbGroomer"></select>
-    </div>
-    <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date" onchange="qbCalc()"></div>
-    <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="19:00" step="900" onchange="qbCalc()"></div>
-    <div class="qb-estimate" id="qbEstimate">กรุณาเลือกวันที่และเวลาเริ่ม</div>
+    <div class="qb-row"><label>ช่าง</label><select id="qbGroomer"></select></div>
+    <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date"></div>
+    <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="20:00" step="900"></div>
+    <div class="qb-row" id="qbEndRow" style="display:none"><label>เวลาสิ้นสุด</label><input id="qbEnd" type="time" min="09:00" max="21:00" step="900"></div>
+    <div class="qb-row"><label id="qbNotesLabel">หมายเหตุ</label><input id="qbNotes" type="text" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></div>
     <div class="qb-err" id="qbErr"></div>
     <div class="qb-btns">
-      <button class="qb-save" onclick="saveQuickBooking()">✓ บันทึกการจอง</button>
+      <button class="qb-save" id="qbSaveBtn" onclick="saveQuickBooking()">✓ บันทึกการจอง</button>
       <button class="qb-cancel-btn" onclick="closeQB(null)">ยกเลิก</button>
     </div>
   </div>
@@ -710,10 +722,16 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
       <div class="line-msg-title">💬 ข้อความ LINE</div>
       <button onclick="closeLineMsg(null)" style="background:var(--cream);border:2px solid var(--sand);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
     </div>
-    <div class="line-msg-tabs">
-      <button class="line-msg-tab active" onclick="switchMsgTab('confirm',this)">✅ ยืนยันคิว</button>
-      <button class="line-msg-tab" onclick="switchMsgTab('remind',this)">⏰ เตือนก่อน 1 ชม.</button>
-      <button class="line-msg-tab" onclick="switchMsgTab('pickup',this)">🎉 รับน้องได้แล้ว</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
+      <div class="line-msg-tabs" style="margin-bottom:0;flex:1" id="lineMsgTypeTabs">
+        <button class="line-msg-tab active" onclick="switchMsgTab('confirm',this)">✅ ยืนยันคิว</button>
+        <button class="line-msg-tab" onclick="switchMsgTab('remind',this)">⏰ เตือนก่อน 1 ชม.</button>
+        <button class="line-msg-tab" onclick="switchMsgTab('pickup',this)">🎉 รับน้องได้แล้ว</button>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button id="langTh" class="line-msg-tab active" onclick="switchMsgLang('th',this)" style="padding:6px 10px;font-size:11px">🇹🇭 ไทย</button>
+        <button id="langEn" class="line-msg-tab" onclick="switchMsgLang('en',this)" style="padding:6px 10px;font-size:11px">🇬🇧 EN</button>
+      </div>
     </div>
     <textarea class="line-msg-text" id="lineMsgText" rows="5" readonly></textarea>
     <div class="line-msg-btns">
@@ -908,21 +926,23 @@ function togglePw(){
   else{i.type='password';eo.style.display='block';ef.style.display='none';}
   i.focus();
 }
-async function doLogin(){
+function doLogin(){
   const val=document.getElementById('pwInput').value,errEl=document.getElementById('loginError');
   if(val===ADMIN_PASSWORD){
-    try{
-      const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{
-        method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
-        body:JSON.stringify({email:ADMIN_EMAIL,password:val})
-      });
-      const d=await r.json();
-      if(d.access_token){SB_TOKEN=d.access_token;try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}}
-    }catch(e){console.warn('Supabase auth failed, using anon token:',e.message);}
     sessionStorage.setItem(SESSION_KEY,'true');
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('adminDashboard').style.display='block';
     errEl.classList.remove('visible'); initAdmin();
+    // fetch Supabase token in background — does not block login
+    (()=>{const ac=new AbortController();setTimeout(()=>ac.abort(),8000);
+      fetch(SB_URL+'/auth/v1/token?grant_type=password',{
+        method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
+        body:JSON.stringify({email:ADMIN_EMAIL,password:val}),signal:ac.signal
+      }).then(r=>r.json()).then(d=>{
+        if(d.access_token){SB_TOKEN=d.access_token;
+          try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}
+          if(d.refresh_token){try{sessionStorage.setItem('sb_refresh',d.refresh_token);}catch(e){}}}
+      }).catch(e=>console.warn('Supabase auth failed, using anon token:',e.message));})();
   } else {
     errEl.classList.add('visible');
     document.getElementById('pwInput').value=''; document.getElementById('pwInput').focus();
@@ -958,6 +978,62 @@ function sbHeaders(extra={}){
     'Authorization': 'Bearer ' + SB_TOKEN,
     'Prefer': 'return=representation'
   }, extra);
+}
+
+async function refreshSbToken(){
+  try{
+    // Try refresh_token first
+    const rt=sessionStorage.getItem('sb_refresh');
+    if(rt){
+      const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
+        method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
+        body:JSON.stringify({refresh_token:rt})
+      });
+      const d=await r.json();
+      if(d.access_token){
+        SB_TOKEN=d.access_token;
+        try{sessionStorage.setItem('sb_token',d.access_token);}catch(e){}
+        if(d.refresh_token){try{sessionStorage.setItem('sb_refresh',d.refresh_token);}catch(e){}}
+        return true;
+      }
+    }
+    // Fallback: re-authenticate with admin credentials silently
+    const r2=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON},
+      body:JSON.stringify({email:ADMIN_EMAIL,password:ADMIN_PASSWORD})
+    });
+    const d2=await r2.json();
+    if(d2.access_token){
+      SB_TOKEN=d2.access_token;
+      try{sessionStorage.setItem('sb_token',d2.access_token);}catch(e){}
+      if(d2.refresh_token){try{sessionStorage.setItem('sb_refresh',d2.refresh_token);}catch(e){}}
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+async function sbFetch(url,opts={}){
+  let res=await fetch(url,{...opts,headers:sbHeaders(opts.headers||{})});
+  if(res.status===401){
+    const ok=await refreshSbToken();
+    if(ok){
+      res=await fetch(url,{...opts,headers:sbHeaders(opts.headers||{})});
+    }
+    if(res.status===401){
+      SB_TOKEN=SB_ANON;
+      try{sessionStorage.removeItem('sb_token');sessionStorage.removeItem('sb_refresh');sessionStorage.removeItem(SESSION_KEY);}catch(e){}
+      // Close any open overlays, then show login screen
+      ['modalOverlay','qbOverlay','lineMsgOverlay','confirmOverlay'].forEach(id=>{
+        const el=document.getElementById(id);if(el)el.classList.add('hidden');
+      });
+      document.getElementById('adminDashboard').style.display='none';
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('loginError').textContent='เซสชันหมดอายุ กรุณาล็อกอินใหม่';
+      document.getElementById('loginError').classList.add('visible');
+      throw new Error('session_expired');
+    }
+  }
+  return res;
 }
 
 // ── FIELD MAPPING ──────────────────────────
@@ -1059,11 +1135,10 @@ function setDbStatus(state, msg){
 async function loadBookings(){
   setDbStatus('loading','⏳ กำลังโหลดข้อมูล...');
   try {
-    const res = await fetch(
+    const res = await sbFetch(
       SB_URL + '/rest/v1/bookings?select=*&order=date.asc,start_time.asc',
-      { headers: sbHeaders({'Prefer':''}) }
+      { headers:{'Prefer':''} }
     );
-    if(res.status===401){SB_TOKEN=SB_ANON;try{sessionStorage.removeItem('sb_token');}catch(e){}throw new Error('HTTP 401 — session expired, please log in again');}
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     bookings.length = 0;
@@ -1112,9 +1187,9 @@ async function updateBooking(id, fields){
 
   // 3. Always try Supabase — fallback to localStorage on failure
   try {
-    const res = await fetch(
+    const res = await sbFetch(
       SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
-      { method:'PATCH', headers:sbHeaders({'Prefer':'return=minimal'}), body:JSON.stringify(partial) }
+      { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify(partial) }
     );
     if(!res.ok){
       const t = await res.text();
@@ -1123,7 +1198,8 @@ async function updateBooking(id, fields){
     }
     console.log('updateBooking OK:', id, Object.keys(partial));
   } catch(err){
-    console.error('updateBooking Supabase error:', err.message, '— saving to localStorage fallback');
+    console.error('updateBooking Supabase error:', err.message);
+    if(err.message!=='session_expired') showToast('บันทึกไม่สำเร็จ — '+err.message.slice(0,40),'error');
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
   }
 }
@@ -1131,8 +1207,8 @@ async function updateBooking(id, fields){
 // ── DELETE ─────────────────────────────────
 async function deleteBooking(id){
   try {
-    await fetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
-      { method:'DELETE', headers:sbHeaders({'Prefer':'return=minimal'}) });
+    await sbFetch(SB_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(id),
+      { method:'DELETE', headers:{'Prefer':'return=minimal'} });
   } catch(err){ console.error('deleteBooking error:', err.message); }
 }
 
@@ -1424,7 +1500,7 @@ function updateSearchCount(){
 
 // STATUS
 const STATUSES=['รอยืนยัน','ยืนยันแล้ว'];
-const STATUS_CLASS={'รอยืนยัน':'st-waiting','ยืนยันแล้ว':'st-confirmed'};
+const STATUS_CLASS={'รอยืนยัน':'st-waiting','ยืนยันแล้ว':'st-confirmed','ปิดคิว':'st-blocked'};
 
 // CONSTANTS — 15-min snap
 const HOUR_START=9,HOUR_END=20,SLOT_PX=30;
@@ -1491,7 +1567,7 @@ function updateWeekLabel(){
 }
 function buildAdminStats(){
   const today=dateToStr(new Date()),weekDays=getWeekDates(adminWeekOffset).map(dateToStr);
-  const active=b=>b.status!=='ยกเลิก';
+  const active=b=>b.status!=='ยกเลิก'&&b.status!=='ปิดคิว';
   const todayBks=bookings.filter(b=>b.date===today&&active(b));
   const weekBks=bookings.filter(b=>weekDays.includes(b.date)&&active(b));
   const todayRev=todayBks.reduce((a,b)=>a+(b.estimatedPriceMin+b.estimatedPriceMax)/2,0);
@@ -1505,7 +1581,7 @@ function buildAdminStats(){
 
 // WEEKLY
 let weekDragId=null,weekDragOffsetY=0;
-function onWeekDragStart(e,id){weekDragId=id;weekDragOffsetY=e.offsetY||0;e.dataTransfer.setData('bkId',id);}
+function onWeekDragStart(e,id){weekDragId=id;weekDragOffsetY=e.offsetY||0;e.dataTransfer.setData('bkId',id);e.dataTransfer.effectAllowed='move';}
 
 // Returns {left,right,width,zIndex} for a booking block in the weekly view
 // Rule 1: no overlap → full width
@@ -1586,13 +1662,17 @@ function renderWeekly(){
         const badges=getBadgesHtml(b.phone);
         const p=calcWeekBlockPos(b,allBks,gsW);
         const pos=`left:${p.left};${p.right!=='auto'?'right:'+p.right+';':''}${p.width!=='auto'?'width:'+p.width+';':''}z-index:${p.zIndex};`;
+        const isBlocked=b.status==='ปิดคิว';
         blocks+=`<div class="week-bk-block ${cls}${hl}" data-id="${b.id}" style="top:${topPx}px;height:${hPx}px;${pos}${dim}"
-          onclick="openModal('${b.id}')" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
-          <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
-          <div class="week-bk-title">${b.petName}</div>
-          <div class="week-bk-sub">${b.customerName}</div>
+          onclick="${isBlocked?`askCancel(event,'${b.id}','ปิดคิว')`:`openModal('${b.id}')`}" draggable="true" ondragstart="onWeekDragStart(event,'${b.id}')">
+          <button class="card-cancel-btn" draggable="false" onmousedown="event.stopPropagation()" onclick="askCancel(event,'${b.id}','${isBlocked?'ปิดคิว':b.petName}')">×</button>
+          ${isBlocked
+            ?`<div class="week-bk-title">🚫 ปิดคิว</div>${b.customerName?`<div class="week-bk-sub">${b.customerName}</div>`:''}`
+            :`<div class="week-bk-title">${b.petName}</div>
+          ${(()=>{const br=getBkBreed(b);return br?`<div class="week-bk-sub" style="opacity:.65">${br}</div>`:''})()}
+          <div class="week-bk-sub">${b.customerName}</div>`}
           <div class="week-bk-time">${b.startTime}–${b.endTime||''}</div>
-          ${badges?`<div>${badges}</div>`:''}
+          ${!isBlocked&&badges?`<div>${badges}</div>`:''}
           <div class="resize-handle resize-handle-bottom" data-resize="bottom" data-id="${b.id}" data-groomer="${b.groomerId||''}" onclick="event.stopPropagation()"></div>
         </div>`;
       });
@@ -1614,7 +1694,7 @@ function renderWeekly(){
   document.querySelectorAll('#weeklyGridOuter .resize-handle').forEach(el=>{el.addEventListener('mousedown',onResDown,false);el.addEventListener('touchstart',onResDown,{passive:false});});
   document.querySelectorAll('.week-col-body:not(.closed-body)').forEach(el=>{
     el.addEventListener('dragover',e=>{
-      e.preventDefault();
+      e.preventDefault();e.dataTransfer.dropEffect='move';
       const id=weekDragId;if(!id)return;
       const bk=bookings.find(b=>b.id===id);if(!bk)return;
       const rect=el.getBoundingClientRect(),rawPx=e.clientY-rect.top-weekDragOffsetY;
@@ -1743,12 +1823,15 @@ function renderDaily(){
       const badges=getBadgesHtml(b.phone);
       const lane=colLane[b.id]||0,lOff=lane*10;
       const posStyle=lane>0?`left:${3+lOff}px;right:3px;z-index:${3+lane};`:'';
+      const isBlocked=b.status==='ปิดคิว';
       blocks+=`<div class="daily-bk-block ${cls}${hl}" data-id="${b.id}" data-groomer="${groomer}" style="top:${top}px;height:${h}px;${posStyle}${dim}">
         <div class="resize-handle resize-handle-top" data-resize="top" data-id="${b.id}" data-groomer="${groomer}"></div>
-        <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${b.petName}')">×</button>
-        <div class="daily-bk-title">${b.petName} · ${b.customerName}</div>
+        <button class="card-cancel-btn" onclick="askCancel(event,'${b.id}','${isBlocked?'ปิดคิว':b.petName}')">×</button>
+        ${isBlocked
+          ?`<div class="daily-bk-title">🚫 ปิดคิว</div>${b.customerName?`<div class="daily-bk-sub">${b.customerName}</div>`:''}`
+          :`<div class="daily-bk-title">${b.petName}${(()=>{const br=getBkBreed(b);return br?' · '+br:''})()}</div>
         ${badges?`<div style="margin-top:2px">${badges}</div>`:''}
-        <div class="daily-bk-sub">${b.service}</div>
+        <div class="daily-bk-sub">${b.service}</div>`}
         <div class="daily-bk-time-badge">${b.startTime}–${b.endTime||''}</div>
         <div class="resize-handle resize-handle-bottom" data-resize="bottom" data-id="${b.id}" data-groomer="${groomer}"></div>
       </div>`;
@@ -1941,6 +2024,15 @@ function renderFlagRow(bk){
   el.appendChild(flagBtn('late','late','⏰','มาสาย',f.late));
   el.appendChild(flagBtn('cancel-flag','cancel','↩','ยกเลิก',f.cancel));
 }
+function getBkBreed(bk){
+  if(!bk.notes)return'';
+  try{
+    const n=JSON.parse(bk.notes);
+    if(n.breed)return n.breed;
+    if(n.pets&&n.pets.length)return n.pets.map(p=>p.breed||'').filter(Boolean).join(' · ');
+  }catch(e){}
+  return'';
+}
 function getBadgesHtml(phone){
   if(!phone)return'';
   const f=getCustomerFlags(phone); let html='';
@@ -1953,47 +2045,74 @@ function getBadgesHtml(phone){
 // ══════════════════════════════════════════
 // LINE MESSAGE TEMPLATES
 // ══════════════════════════════════════════
-let lineMsgBkId=null, currentMsgType='confirm';
+let lineMsgBkId=null, currentMsgType='confirm', currentMsgLang='th';
 
 function formatThaiDate(dateStr){
   if(!dateStr)return'';
   const d=new Date(dateStr+'T12:00:00');
   return d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
+function formatEngDate(dateStr){
+  if(!dateStr)return'';
+  const d=new Date(dateStr+'T12:00:00');
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
 
-function buildMsg(bk,type){
+function buildMsg(bk,type,lang){
+  lang=lang||currentMsgLang;
   const name=bk.customerName||'ลูกค้า';
   const pet=bk.petName||'น้อง';
-  const date=formatThaiDate(bk.date);
   const time=bk.startTime||'';
   const end=bk.endTimeMax||bk.endTime||'';
-  const endDisp=end?` (รับกลับประมาณ ${end} น.)`:'';
-  if(type==='confirm')
-    return `สวัสดีค่ะคุณ${name} 🐾\nChou&Me ขอยืนยันคิว Grooming ของน้อง${pet}\nวันที่ ${date}\nเวลา ${time} น.${endDisp}\nหากมีข้อสงสัยสอบถามได้เลยนะคะ 😊`;
-  if(type==='remind')
-    return `สวัสดีค่ะคุณ${name} 🐾\nอีกประมาณ 1 ชั่วโมงจะถึงคิว Grooming ของน้อง${pet}\nที่ Chou&Me แล้วนะคะ ⏰\nเวลา ${time} น. วันนี้ค่ะ`;
-  if(type==='pickup')
-    return `สวัสดีค่ะคุณ${name} 🐾\nน้อง${pet} Grooming เสร็จเรียบร้อยแล้วค่ะ ✨\nสามารถมารับได้เลยนะคะ 😊\nขอบคุณที่ใช้บริการ Chou&Me ค่ะ 🙏`;
+  if(lang==='en'){
+    const date=formatEngDate(bk.date);
+    const endDisp=end?` (estimated pick-up around ${end})`:'';
+    if(type==='confirm')
+      return `Hello, ${name}! 🐾\nChou&Me would like to confirm your grooming appointment for ${pet}.\nDate: ${date}\nTime: ${time}${endDisp}\nPlease don't hesitate to contact us if you have any questions 😊`;
+    if(type==='remind')
+      return `Hello, ${name}! 🐾\nJust a reminder that ${pet}'s grooming appointment at Chou&Me is in about 1 hour ⏰\nTime: ${time} today`;
+    if(type==='pickup')
+      return `Hello, ${name}! 🐾\n${pet}'s grooming session is all done! ✨\nPlease come pick up your furry one at your convenience 😊\nThank you for choosing Chou&Me 🙏`;
+  } else {
+    const date=formatThaiDate(bk.date);
+    const endDisp=end?` (รับกลับประมาณ ${end} น.)`:'';
+    if(type==='confirm')
+      return `สวัสดีค่ะคุณ${name} 🐾\nChou&Me ขอยืนยันคิว Grooming ของน้อง${pet}\nวันที่ ${date}\nเวลา ${time} น.${endDisp}\nหากมีข้อสงสัยสอบถามได้เลยนะคะ 😊`;
+    if(type==='remind')
+      return `สวัสดีค่ะคุณ${name} 🐾\nอีกประมาณ 1 ชั่วโมงจะถึงคิว Grooming ของน้อง${pet}\nที่ Chou&Me แล้วนะคะ ⏰\nเวลา ${time} น. วันนี้ค่ะ`;
+    if(type==='pickup')
+      return `สวัสดีค่ะคุณ${name} 🐾\nน้อง${pet} Grooming เสร็จเรียบร้อยแล้วค่ะ ✨\nสามารถมารับได้เลยนะคะ 😊\nขอบคุณที่ใช้บริการ Chou&Me ค่ะ 🙏`;
+  }
   return'';
 }
 
 function openLineMsg(type){
   const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
   lineMsgBkId=modalBkId; currentMsgType=type;
-  // Set active tab
-  document.querySelectorAll('.line-msg-tab').forEach(t=>{
+  // Sync type tabs
+  document.querySelectorAll('#lineMsgTypeTabs .line-msg-tab').forEach(t=>{
     const tabType=t.getAttribute('onclick').match(/'(\w+)'/)?.[1];
     t.classList.toggle('active',tabType===type);
   });
+  // Sync lang tabs
+  document.getElementById('langTh').classList.toggle('active',currentMsgLang==='th');
+  document.getElementById('langEn').classList.toggle('active',currentMsgLang==='en');
   document.getElementById('lineMsgText').value=buildMsg(bk,type);
   document.getElementById('lineMsgOverlay').classList.remove('hidden');
 }
 function switchMsgTab(type,btn){
   currentMsgType=type;
-  document.querySelectorAll('.line-msg-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#lineMsgTypeTabs .line-msg-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   const bk=bookings.find(b=>b.id===lineMsgBkId);
   if(bk)document.getElementById('lineMsgText').value=buildMsg(bk,type);
+}
+function switchMsgLang(lang,btn){
+  currentMsgLang=lang;
+  document.getElementById('langTh').classList.toggle('active',lang==='th');
+  document.getElementById('langEn').classList.toggle('active',lang==='en');
+  const bk=bookings.find(b=>b.id===lineMsgBkId);
+  if(bk)document.getElementById('lineMsgText').value=buildMsg(bk,currentMsgType);
 }
 function copyLineMsg(){
   const txt=document.getElementById('lineMsgText').value;
@@ -2106,9 +2225,14 @@ function openModal(id){
   let multiPet=null,plainNotes='';
   try{
     const parsed=JSON.parse(bk.notes||'');
-    if(parsed&&parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
-    else plainNotes=bk.notes||'';
-  }catch(e){plainNotes=bk.notes||'';}
+    if(parsed&&typeof parsed==='object'){
+      if(parsed.petCount&&Array.isArray(parsed.pets)) multiPet=parsed;
+      // Try common keys the booking form might use for text notes
+      plainNotes=(parsed.notes||parsed.remark||parsed.note||parsed.special_request||parsed.comment||'').toString().trim();
+    } else {
+      plainNotes=bk.notes||''; // primitive JSON value — treat as plain text
+    }
+  }catch(e){plainNotes=bk.notes||'';} // not JSON — treat as plain text
 
   // Title
   if(multiPet){
@@ -2130,7 +2254,7 @@ function openModal(id){
       const addonsStr=p.addons&&p.addons.length?p.addons.join(', '):'–';
       const pStr=p.priceMin===p.priceMax?'฿'+(p.priceMin||0).toLocaleString():'฿'+(p.priceMin||0).toLocaleString()+'–฿'+(p.priceMax||0).toLocaleString();
       return`<div class="pet-card">
-        <div class="pet-card-name">${icon} ${p.name}</div>
+        <div class="pet-card-name">${icon} ${p.name}${p.breed?` <span style="font-weight:400;font-size:11px;opacity:.7">(${p.breed})</span>`:''}</div>
         <div class="pet-card-row">${p.weight||''} · ${p.coat||''}</div>
         <div class="pet-card-row"><strong>${p.service||''}</strong></div>
         ${addonsStr!=='–'?`<div class="pet-card-row">+ ${addonsStr}</div>`:''}
@@ -2154,6 +2278,7 @@ function openModal(id){
     ${petSection}
     <div class="modal-row"><span class="ml">ราคาประมาณ</span><span class="mv">${priceStr}</span></div>
     ${plainNotes?`<div class="modal-row"><span class="ml">หมายเหตุ</span><span class="mv">${plainNotes}</span></div>`:''}`;
+
   const stRow=document.getElementById('statusToggleRow');
   stRow.innerHTML=STATUSES.map(s=>`<button class="status-toggle-btn ${s==='รอยืนยัน'?'waiting':'confirmed'}${bk.status===s?' active':''}" onclick="setStatus('${s}')">${s==='รอยืนยัน'?'⏳':'✅'} ${s}</button>`).join('');
   buildHistorySection(bk);
@@ -2169,69 +2294,153 @@ function setStatus(s){
 function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.add('hidden');}
 
 // QUICK BOOKING
-const QB_DUR={'bath':60,'bath_clipper':90,'bath_scissor':120};
+// QUICK BOOKING — multi-pet, fixed 1-hour block
+let qbPets=[];
+const QB_SERVICES={dog:['อาบน้ำสุนัข','อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','อาบน้ำ + ตัดขน (กรรไกร)'],cat:['อาบน้ำแมว','อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','อาบน้ำ + ตัดขน (กรรไกร)']};
+const QB_ADDONS=['สปา','แชมพูยา','ขจัดคราบมัน','ทรีตเมนต์','แปรงฟัน','สางขนสองชั้น','สางขนสังกะตัง'];
+
+function renderQbPets(){
+  const c=document.getElementById('qbPetsList');if(!c)return;
+  const btn=document.getElementById('qbAddPetBtn');
+  if(btn)btn.style.display=qbPets.length>=4?'none':'';
+  c.innerHTML=qbPets.map((p,i)=>{
+    const svcList=QB_SERVICES[p.petType]||QB_SERVICES.dog;
+    if(!svcList.includes(p.service))p.service=svcList[0];
+    const svcs=svcList.map(s=>`<option value="${s}"${p.service===s?' selected':''}>${s}</option>`).join('');
+    const addons=QB_ADDONS.map(a=>`<label class="qb-addon-item"><input type="checkbox"${p.addons.includes(a)?' checked':''} onchange="qbToggleAddon(${i},'${a}',this.checked)"> ${a}</label>`).join('');
+    return`<div class="qb-pet-card">
+      <div class="qb-pet-header">
+        <span>🐾 น้องตัวที่ ${i+1}</span>
+        ${qbPets.length>1?`<button class="qb-pet-remove" onclick="removeQbPet(${i})">×</button>`:''}
+      </div>
+      <div class="qb-row"><label>ชื่อน้อง</label><input type="text" value="${p.name}" placeholder="ชื่อสัตว์เลี้ยง" oninput="qbPets[${i}].name=this.value"></div>
+      <div class="qb-row"><label>พันธุ์</label><input type="text" value="${p.breed||''}" placeholder="พันธุ์สัตว์เลี้ยง" oninput="qbPets[${i}].breed=this.value"></div>
+      <div class="qb-row"><label>ประเภท</label><select onchange="qbPets[${i}].petType=this.value;qbPets[${i}].service='';renderQbPets()"><option value="dog"${p.petType==='dog'?' selected':''}>🐕 สุนัข</option><option value="cat"${p.petType==='cat'?' selected':''}>🐈 แมว</option></select></div>
+      <div class="qb-row"><label>บริการ</label><select onchange="qbPets[${i}].service=this.value">${svcs}</select></div>
+      <div class="qb-section-label">บริการเสริม</div>
+      <div class="qb-addon-grid">${addons}</div>
+    </div>`;
+  }).join('');
+}
+function addQbPet(){
+  if(qbPets.length>=4)return;
+  qbPets.push({name:'',breed:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]});
+  renderQbPets();
+}
+function removeQbPet(i){
+  qbPets.splice(i,1);renderQbPets();
+}
+function qbToggleAddon(i,addon,checked){
+  if(checked){if(!qbPets[i].addons.includes(addon))qbPets[i].addons.push(addon);}
+  else{qbPets[i].addons=qbPets[i].addons.filter(a=>a!==addon);}
+}
+let qbMode='booking';
+function switchQbMode(mode){
+  qbMode=mode;
+  const isBlock=mode==='block';
+  document.getElementById('qbBookingFields').style.display=isBlock?'none':'';
+  document.getElementById('qbEndRow').style.display=isBlock?'':'none';
+  document.getElementById('qbNotesLabel').textContent=isBlock?'เหตุผล':'หมายเหตุ';
+  document.getElementById('qbNotes').placeholder=isBlock?'เช่น ช่างลา, ประชุม (ถ้ามี)':'หมายเหตุเพิ่มเติม (ถ้ามี)';
+  document.getElementById('qbTitleLabel').textContent=isBlock?'🚫 ปิดคิว':'＋ จองด่วน';
+  document.getElementById('qbSaveBtn').textContent=isBlock?'🚫 ปิดคิว':'✓ บันทึกการจอง';
+  const btnBook=document.getElementById('qbModeBook'),btnBlock=document.getElementById('qbModeBlock');
+  btnBook.style.background=isBlock?'var(--cream)':'var(--brown)';
+  btnBook.style.color=isBlock?'var(--text-mid)':'#fff';
+  btnBook.style.borderColor=isBlock?'var(--sand)':'var(--brown)';
+  btnBlock.style.background=isBlock?'#b8b0a4':'var(--cream)';
+  btnBlock.style.color=isBlock?'#fff':'var(--text-mid)';
+  btnBlock.style.borderColor=isBlock?'#b8b0a4':'var(--sand)';
+  document.getElementById('qbErr').classList.remove('visible');
+}
 function openQuickBooking(){
+  qbMode='booking';
+  qbPets=[{name:'',breed:'',petType:'dog',service:'อาบน้ำสุนัข',addons:[]}];
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
+  document.getElementById('qbEnd').value='10:00';
+  document.getElementById('qbNotes').value='';
   document.getElementById('qbErr').classList.remove('visible');
-  qbCalc();document.getElementById('qbOverlay').classList.remove('hidden');
+  switchQbMode('booking');
+  renderQbPets();
+  document.getElementById('qbOverlay').classList.remove('hidden');
 }
 function closeQB(e){if(e&&e.target!==document.getElementById('qbOverlay'))return;document.getElementById('qbOverlay').classList.add('hidden');}
-function qbCalc(){
-  const svc=document.getElementById('qbService').value;
-  const mn=QB_DUR[svc]||60,mx=mn+60;
-  const start=document.getElementById('qbStart').value,date=document.getElementById('qbDate').value;
-  if(!start||!date){document.getElementById('qbEstimate').textContent='กรุณาเลือกวันที่และเวลาเริ่ม';return;}
-  const startM=timeToMin(start);
-  const endMin=minToTime(startM+mn),endMax=minToTime(startM+mx);
-  const endRange=endMin===endMax?endMin:endMin+'–'+endMax;
-  const over=startM+mx>20*60;
-  document.getElementById('qbEstimate').innerHTML=`⏱ ประมาณ ${mn/60}–${mx/60} ชั่วโมง &nbsp;·&nbsp; รับกลับประมาณ <strong>${endRange} น.</strong>`+(over?'<br><span style="color:#c05050;font-size:11px">⚠️ อาจเกินเวลาปิดร้าน 20:00</span>':'');
-}
+
 async function saveQuickBooking(){
   const errEl=document.getElementById('qbErr');errEl.classList.remove('visible');
-  const name=document.getElementById('qbName').value.trim(),phone=document.getElementById('qbPhone').value.trim();
-  const pet=document.getElementById('qbPet').value.trim(),petType=document.getElementById('qbType').value;
-  const svcVal=document.getElementById('qbService').value,groomer=document.getElementById('qbGroomer').value;
-  const date=document.getElementById('qbDate').value,start=document.getElementById('qbStart').value;
-  if(!name||!phone||!pet||!date||!start){errEl.textContent='กรุณากรอกข้อมูลให้ครบถ้วน';errEl.classList.add('visible');return;}
+  const groomer=document.getElementById('qbGroomer').value;
+  const date=document.getElementById('qbDate').value;
+  const start=document.getElementById('qbStart').value;
+  const qbNotesText=(document.getElementById('qbNotes').value||'').trim();
+
+  // ── ปิดคิว mode ──
+  if(qbMode==='block'){
+    const endVal=document.getElementById('qbEnd').value;
+    if(!date||!start||!endVal){errEl.textContent='กรุณากรอกวันที่และเวลาให้ครบ';errEl.classList.add('visible');return;}
+    const startM=timeToMin(start),endM=timeToMin(endVal);
+    if(endM<=startM){errEl.textContent='เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม';errEl.classList.add('visible');return;}
+    const dur=endM-startM;
+    const newBk={id:'BLK-'+Date.now(),customerName:qbNotesText,phone:'',petName:'ปิดคิว',petType:'',weightRange:'',coatType:'',service:'',addOns:[],estimatedPriceMin:0,estimatedPriceMax:0,estimatedDurationMin:dur,estimatedDurationMax:dur,date,startTime:start,endTimeMin:minToTime(endM),endTimeMax:minToTime(endM),endTime:minToTime(endM),groomerId:groomer,status:'ปิดคิว',notes:'',createdAt:new Date().toISOString()};
+    if(dbOnline){
+      try{
+        const res=await sbFetch(SB_URL+'/rest/v1/bookings',{method:'POST',body:JSON.stringify(toRow(newBk))});
+        if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t);}
+      }catch(err){if(err.message!=='session_expired')showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
+    }
+    bookings.push(newBk);
+    document.getElementById('qbOverlay').classList.add('hidden');
+    showToast('ปิดคิวเรียบร้อยแล้ว ✓','success');
+    buildAdminStats();renderCurrentView();return;
+  }
+
+  // ── จองด่วน mode ──
+  const name=document.getElementById('qbName').value.trim();
+  const phone=document.getElementById('qbPhone').value.trim();
+  if(!name||!phone||!date||!start){errEl.textContent='กรุณากรอกข้อมูลให้ครบถ้วน';errEl.classList.add('visible');return;}
+  if(qbPets.some(p=>!p.name.trim())){errEl.textContent='กรุณากรอกชื่อน้องให้ครบทุกตัว';errEl.classList.add('visible');return;}
   if(new Date(date+'T12:00:00').getDay()===1){errEl.textContent='วันจันทร์ร้านปิด';errEl.classList.add('visible');return;}
   const startM=timeToMin(start);
   if(startM<9*60||startM>=20*60){errEl.textContent='เวลาเริ่มต้องอยู่ระหว่าง 09:00–19:59';errEl.classList.add('visible');return;}
-  const mn=QB_DUR[svcVal]||60,mx=mn+60;
-  if(startM+mx>20*60){errEl.textContent='เวลานี้อาจเกินเวลาปิดร้าน (20:00)';errEl.classList.add('visible');return;}
-  const endTimeMin=minToTime(startM+mn),endTimeMax=minToTime(startM+mx);
-  const svcLabels={'bath':'อาบน้ำ','bath_clipper':'อาบน้ำ + ตัดขน (ปัตตาเลี่ยน)','bath_scissor':'อาบน้ำ + ตัดขน (กรรไกร)'};
+  const dur=60,endTime=minToTime(startM+dur);
+  const petName=qbPets.map(p=>p.name.trim()).join(' · ');
+  const service=qbPets.map(p=>p.service).join(' | ');
+  const allAddons=[...new Set(qbPets.flatMap(p=>p.addons))];
+  let notes;
+  if(qbPets.length>1){
+    const obj={petCount:qbPets.length,pets:qbPets.map(p=>({name:p.name.trim(),breed:p.breed||'',petType:p.petType,service:p.service,addons:p.addons}))};
+    if(qbNotesText)obj.notes=qbNotesText;
+    notes=JSON.stringify(obj);
+  } else {
+    const haBreed=(qbPets[0].breed||'').trim();
+    if(haBreed||qbNotesText){
+      const obj={};
+      if(haBreed)obj.breed=haBreed;
+      if(qbNotesText)obj.notes=qbNotesText;
+      notes=JSON.stringify(obj);
+    } else { notes=''; }
+  }
   const newBk={
     id:'QB-'+Date.now(),
-    customerName:name, phone, petName:pet, petType,
+    customerName:name, phone,
+    petName, petType:qbPets[0].petType,
     weightRange:'', coatType:'',
-    service:svcLabels[svcVal]||svcVal,
-    addOns:[], estimatedPriceMin:0, estimatedPriceMax:0,
-    estimatedDurationMin:mn, estimatedDurationMax:mx,
+    service, addOns:allAddons,
+    estimatedPriceMin:0, estimatedPriceMax:0,
+    estimatedDurationMin:dur, estimatedDurationMax:dur,
     date, startTime:start,
-    endTimeMin, endTimeMax, endTime:endTimeMax,
+    endTimeMin:endTime, endTimeMax:endTime, endTime,
     groomerId:groomer, status:'ยืนยันแล้ว',
-    notes:'', createdAt:new Date().toISOString()
+    notes, createdAt:new Date().toISOString()
   };
-  const clash=bookings.filter(b=>b.date===date&&b.groomerId===groomer&&b.status!=='ยกเลิก'&&overlaps(b.startTime,b.estimatedDurationMax,start,mx));
-  if(clash.length){errEl.textContent='ช่วงเวลาดังกล่าวชนกับการจองของช่างคนนี้';errEl.classList.add('visible');return;}
-  // Save to Supabase (or localStorage fallback)
   if(dbOnline){
-    try {
-      const res = await fetch(SB_URL + '/rest/v1/bookings',
-        { method:'POST', headers:sbHeaders(), body:JSON.stringify(toRow(newBk)) });
-      if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+': '+t); }
-      console.log('Quick booking saved to Supabase:', newBk.id);
-    } catch(err){
-      console.error('saveQuickBooking Supabase error:', err.message);
-      showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');
-      return;
-    }
-  } else {
-    // Offline fallback
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); } catch(e){}
+    try{
+      const res=await sbFetch(SB_URL+'/rest/v1/bookings',{method:'POST',body:JSON.stringify(toRow(newBk))});
+      if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t);}
+    }catch(err){if(err.message!=='session_expired')showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
+  }else{
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(bookings));}catch(e){}
   }
   bookings.push(newBk);
   document.getElementById('qbOverlay').classList.add('hidden');
@@ -2261,7 +2470,7 @@ function closeConfirm(){cancelTargetId=null;document.getElementById('confirmOver
 // DEBUG MODAL
 function openDebugModal(){
   document.getElementById('debugBkCount').textContent=bookings.length+' รายการ';
-  const cols=[{k:'customerName',l:'ลูกค้า'},{k:'petName',l:'น้อง'},{k:'service',l:'บริการ'},{k:'date',l:'วันที่'},{k:'startTime',l:'เริ่ม'},{k:'endTime',l:'สิ้นสุด'},{k:'groomerId',l:'ช่าง'},{k:'status',l:'สถานะ'}];
+  const cols=[{k:'customerName',l:'ลูกค้า'},{k:'petName',l:'น้อง'},{k:'service',l:'บริการ'},{k:'date',l:'วันที่'},{k:'startTime',l:'เริ่ม'},{k:'endTime',l:'สิ้นสุด'},{k:'groomerId',l:'ช่าง'},{k:'status',l:'สถานะ'},{k:'notes',l:'notes (raw)'}];
   const thead='<tr>'+cols.map(c=>`<th>${c.l}</th>`).join('')+'</tr>';
   const tbody=bookings.map(b=>`<tr>${cols.map(c=>{let v=b[c.k]??'–';if(c.k==='groomerId')v=v==='groomer2'?'ช่าง 2':'ช่าง 1';if(c.k==='status')v=`<span style="font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700;${b.status==='รอยืนยัน'?'background:#FFF8DC;color:#7a5a00':'background:#E8F5EE;color:#2a5a38'}">${v}</span>`;return`<td>${v}</td>`;}).join('')}</tr>`).join('');
   document.getElementById('debugTableWrap').innerHTML=`<table class="debug-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
