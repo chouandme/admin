@@ -1000,8 +1000,16 @@ async function sbFetch(url,opts={}){
     }
     if(res.status===401){
       SB_TOKEN=SB_ANON;
-      try{sessionStorage.removeItem('sb_token');sessionStorage.removeItem('sb_refresh');}catch(e){}
-      throw new Error('HTTP 401 — เซสชันหมดอายุ กรุณาล็อกอินใหม่');
+      try{sessionStorage.removeItem('sb_token');sessionStorage.removeItem('sb_refresh');sessionStorage.removeItem(SESSION_KEY);}catch(e){}
+      // Close any open overlays, then show login screen
+      ['modalOverlay','qbOverlay','lineMsgOverlay','confirmOverlay'].forEach(id=>{
+        const el=document.getElementById(id);if(el)el.classList.add('hidden');
+      });
+      document.getElementById('adminDashboard').style.display='none';
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('loginError').textContent='เซสชันหมดอายุ กรุณาล็อกอินใหม่';
+      document.getElementById('loginError').classList.add('visible');
+      throw new Error('session_expired');
     }
   }
   return res;
@@ -2358,7 +2366,7 @@ async function saveQuickBooking(){
     try{
       const res=await sbFetch(SB_URL+'/rest/v1/bookings',{method:'POST',body:JSON.stringify(toRow(newBk))});
       if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t);}
-    }catch(err){showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
+    }catch(err){if(err.message!=='session_expired')showToast('บันทึกไม่สำเร็จ: '+err.message.slice(0,60),'error');return;}
   }else{
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(bookings));}catch(e){}
   }
