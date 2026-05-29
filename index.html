@@ -796,17 +796,17 @@ box-shadow:
     <!-- Status toggle -->
     <div class="status-toggle-row" id="statusToggleRow"></div>
     <!-- Behavior flags -->
-    <div style="margin-top:10px">
+    <div id="modalFlagsSection" style="margin-top:10px">
       <div style="font-size:11px;color:var(--text-mid);margin-bottom:6px;font-weight:600">SPECIAL NOTE</div>
       <div class="flag-row" id="flagRow"></div>
     </div>
     <!-- Quick actions -->
-    <div class="modal-actions" style="margin-top:12px">
+    <div class="modal-actions" id="modalActionsSection" style="margin-top:12px">
       <button class="modal-btn call" onclick="callCustomer()">📞 โทรศัพท์</button>
       <button class="modal-btn line" onclick="openLine()">💬 LINE</button>
     </div>
     <!-- LINE message templates -->
-    <div style="margin-top:10px">
+    <div id="modalLineMsgSection" style="margin-top:10px">
       <div style="font-size:11px;color:var(--text-mid);margin-bottom:6px;font-weight:600">ส่งข้อความ LINE</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button onclick="openLineMsg('confirm')" style="flex:1;min-width:100px;padding:8px 6px;border-radius:12px;background:var(--blue);color:var(--white); border:0px; font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✅ ยืนยันคิว</button>
@@ -2514,10 +2514,8 @@ function openModalEdit(){
       <button class="modal-save-btn save" onclick="saveModalEdit()">✓ บันทึก</button>
       <button class="modal-save-btn cancel" onclick="openModal(modalBkId)">ยกเลิก</button>
     </div>`;
-  document.getElementById('statusToggleRow').style.display='none';
-  ['flagRow','historySection'].forEach(id=>{const el=document.getElementById(id);if(el)el.parentElement.style.display='none';});
-  document.querySelectorAll('#modalOverlay .modal-actions, #modalOverlay [style*="ส่งข้อความ LINE"]').forEach(el=>el.style.display='none');
-  document.getElementById('modalEditBtn').style.display='none';
+  ['statusToggleRow','modalFlagsSection','modalActionsSection','modalLineMsgSection','historySection','modalEditBtn']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
 
 async function saveModalEdit(){
