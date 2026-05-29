@@ -2160,7 +2160,7 @@ function onResEnd(e){
         bk.startTime=ix.ps;bk.endTime=ix.pe;bk.estimatedDurationMin=ix.pd;bk.estimatedDurationMax=ix.pd;
         bk.endTimeMax=ix.pe; bk.endTimeMin=ix.ps;
         updateBooking(bk.id,{startTime:bk.startTime,endTime:bk.endTime,endTimeMin:bk.endTimeMin,endTimeMax:bk.endTimeMax,estimatedDurationMin:bk.estimatedDurationMin,estimatedDurationMax:bk.estimatedDurationMax});
-        if(modalBkId===bk.id){const row=document.querySelector('#modalBody .modal-row:nth-child(3) .mv');if(row)row.textContent=bk.startTime+' – '+bk.endTime+' น.';}
+        if(modalBkId===bk.id){const row=document.getElementById('mv_time');if(row&&!row.querySelector('input'))row.textContent=bk.startTime+'–'+bk.endTime+' น.';}
         showToast('ปรับเวลาเรียบร้อยแล้ว ✓','success');renderCurrentView();buildAdminStats();
       }else{showToast('ไม่สามารถปรับขนาดได้','error');if(ix.isWeekly)renderWeekly();else renderDaily();}
     }
@@ -2464,24 +2464,29 @@ function openModal(id){
   } else {
     const addonStr=bk.addOns&&bk.addOns.length?bk.addOns.join(', '):'–';
     petSection=`
-    <div class="modal-row"><span class="ml">น้ำหนัก / ขน</span><span class="mv">${bk.weightRange||'–'} · ${bk.coatType||'–'}</span></div>
-    <div class="modal-row"><span class="ml">บริการ</span><span class="mv">${bk.service}</span></div>
-    <div class="modal-row"><span class="ml">บริการเสริม</span><span class="mv">${addonStr}</span></div>`;
+    <div class="modal-row"><span class="ml">น้ำหนัก / ขน</span><span class="mv" id="mv_weight">${bk.weightRange||'–'} · ${bk.coatType||'–'}</span></div>
+    <div class="modal-row"><span class="ml">บริการ</span><span class="mv" id="mv_service">${bk.service||'–'}</span></div>
+    <div class="modal-row"><span class="ml">บริการเสริม</span><span class="mv" id="mv_addons">${addonStr}</span></div>`;
   }
 
   document.getElementById('modalBody').innerHTML=`
-    <div class="modal-row"><span class="ml">วันที่</span><span class="mv">${dateDisp}</span></div>
-    <div class="modal-row"><span class="ml">ช่าง</span><span class="mv">${groomerLbl}</span></div>
-    <div class="modal-row"><span class="ml">เวลา</span><span class="mv">${endDisp} น.</span></div>
-    <div class="modal-row"><span class="ml">เบอร์โทร</span><span class="mv">${bk.phone||'–'}</span></div>
+    <div class="modal-row"><span class="ml">วันที่</span><span class="mv" id="mv_date">${dateDisp}</span></div>
+    <div class="modal-row"><span class="ml">ช่าง</span><span class="mv" id="mv_groomer">${groomerLbl}</span></div>
+    <div class="modal-row"><span class="ml">เวลา</span><span class="mv" id="mv_time">${bk.startTime}–${endDisp} น.</span></div>
+    <div class="modal-row"><span class="ml">เบอร์โทร</span><span class="mv" id="mv_phone">${bk.phone||'–'}</span></div>
     ${petSection}
-    <div class="modal-row"><span class="ml">ราคาประมาณ</span><span class="mv">${priceStr}</span></div>
-    ${plainNotes?`<div class="modal-row"><span class="ml">หมายเหตุ</span><span class="mv">${plainNotes}</span></div>`:''}`;
+    <div class="modal-row"><span class="ml">ราคาประมาณ</span><span class="mv" id="mv_price">${priceStr}</span></div>
+    <div class="modal-row" id="mv_notes_row"${plainNotes?'':' style="display:none"'}><span class="ml">หมายเหตุ</span><span class="mv" id="mv_notes">${plainNotes}</span></div>`;
 
   const stRow=document.getElementById('statusToggleRow');
   stRow.innerHTML=STATUSES.map(s=>`<button class="status-toggle-btn ${s==='รอยืนยัน'?'waiting':'confirmed'}${bk.status===s?' active':''}" onclick="setStatus('${s}')">${s==='รอยืนยัน'?'⏳':'✅'} ${s}</button>`).join('');
   buildHistorySection(bk);
   renderFlagRow(bk);
+  // Reset edit button state
+  const eb=document.getElementById('modalEditBtn');
+  if(eb){eb.textContent='✏️ แก้ไข';eb.onclick=openModalEdit;eb.style.cssText='';}
+  const cb=document.getElementById('modalCancelEditBtn');if(cb)cb.remove();
+  ['statusToggleRow','modalFlagsSection','modalActionsSection','modalLineMsgSection','historySection'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
   document.getElementById('modalOverlay').classList.remove('hidden');
 }
 function setStatus(s){
@@ -2494,51 +2499,60 @@ function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))
 
 function openModalEdit(){
   const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
-  const groomerOpts=groomers.map(g=>`<option value="${g.id}"${bk.groomerId===g.id?' selected':''}>${g.name}</option>`).join('');
-  const addonStr=(bk.addOns&&bk.addOns.length)?bk.addOns.join(', '):'';
+  const INP='flex:1;padding:4px 8px;border:2px solid var(--sand);border-radius:8px;font-family:\'Mitr\',sans-serif;font-size:13px;color:var(--text-dark);background:var(--white);outline:none;text-align:right;min-width:0;max-width:56%;transition:border .15s';
+  const SEL=INP+';cursor:pointer';
+  function repEl(id,html){const el=document.getElementById(id);if(el)el.outerHTML=html;}
+  function inp(id,type,val,extra=''){repEl(id,`<input id="${id}" type="${type}" value="${String(val).replace(/"/g,'&quot;')}" ${extra} style="${INP}">`);}
+
+  // notes plain value
   let notesVal='';
   try{const p=JSON.parse(bk.notes||'');notesVal=(p&&typeof p==='object')?(p.notes||p.remark||p.note||'').toString():bk.notes||'';}catch(e){notesVal=bk.notes||'';}
-  document.getElementById('modalBody').innerHTML=`
-    <div class="modal-edit-row"><span class="ml">ชื่อลูกค้า</span><input id="me_name" value="${(bk.customerName||'').replace(/"/g,'&quot;')}"></div>
-    <div class="modal-edit-row"><span class="ml">เบอร์โทร</span><input id="me_phone" type="tel" value="${bk.phone||''}"></div>
-    <div class="modal-edit-row"><span class="ml">วันที่</span><input id="me_date" type="date" value="${bk.date||''}"></div>
-    <div class="modal-edit-row"><span class="ml">ช่าง</span><select id="me_groomer">${groomerOpts}</select></div>
-    <div class="modal-edit-row"><span class="ml">เวลาเริ่ม</span><input id="me_start" type="time" value="${bk.startTime||''}"></div>
-    <div class="modal-edit-row"><span class="ml">เวลาสิ้นสุด</span><input id="me_end" type="time" value="${bk.endTime||bk.endTimeMax||''}"></div>
-    <div class="modal-edit-row"><span class="ml">บริการ</span><input id="me_service" value="${(bk.service||'').replace(/"/g,'&quot;')}"></div>
-    <div class="modal-edit-row"><span class="ml">บริการเสริม</span><input id="me_addons" placeholder="คั่นด้วยลูกน้ำ" value="${addonStr.replace(/"/g,'&quot;')}"></div>
-    <div class="modal-edit-row"><span class="ml">น้ำหนัก/ขน</span><input id="me_weight" value="${(bk.weightRange||'').replace(/"/g,'&quot;')}"></div>
-    <div class="modal-edit-row"><span class="ml">ราคา (บาท)</span><input id="me_price" type="number" min="0" value="${bk.estimatedPriceMin||0}"></div>
-    <div class="modal-edit-row" style="border:none"><span class="ml">หมายเหตุ</span><input id="me_notes" value="${notesVal.replace(/"/g,'&quot;')}"></div>
-    <div class="modal-save-row">
-      <button class="modal-save-btn save" onclick="saveModalEdit()">✓ บันทึก</button>
-      <button class="modal-save-btn cancel" onclick="openModal(modalBkId)">ยกเลิก</button>
-    </div>`;
-  ['statusToggleRow','modalFlagsSection','modalActionsSection','modalLineMsgSection','historySection','modalEditBtn']
-    .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+
+  inp('mv_date','date',bk.date||'');
+  repEl('mv_groomer',`<select id="mv_groomer" style="${SEL}">${groomers.map(g=>`<option value="${g.id}"${bk.groomerId===g.id?' selected':''}>${g.name}</option>`).join('')}</select>`);
+  repEl('mv_time',`<span id="mv_time" style="display:flex;gap:4px;align-items:center;flex:1;justify-content:flex-end"><input id="me_start" type="time" value="${bk.startTime||''}" style="${INP};max-width:90px"><span style="color:var(--text-mid)">–</span><input id="me_end" type="time" value="${bk.endTime||bk.endTimeMax||''}" style="${INP};max-width:90px"></span>`);
+  inp('mv_phone','tel',bk.phone||'');
+  inp('mv_weight','text',bk.weightRange||'');
+  inp('mv_service','text',bk.service||'');
+  inp('mv_addons','text',(bk.addOns&&bk.addOns.length)?bk.addOns.join(', '):'');
+  inp('mv_price','number',bk.estimatedPriceMin||0,'min="0"');
+  const nr=document.getElementById('mv_notes_row');if(nr)nr.style.display='';
+  inp('mv_notes','text',notesVal);
+
+  // Change button to บันทึก + add ยกเลิก
+  const btn=document.getElementById('modalEditBtn');
+  btn.textContent='✓ บันทึก';
+  btn.onclick=saveModalEdit;
+  btn.style.cssText='padding:6px 14px;border-radius:var(--radius-pill);border:2px solid var(--brown);background:var(--brown);color:#fff;font-family:\'Quicksand\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0';
+  if(!document.getElementById('modalCancelEditBtn')){
+    const c=document.createElement('button');
+    c.id='modalCancelEditBtn';c.textContent='ยกเลิก';
+    c.style.cssText='padding:6px 12px;border-radius:var(--radius-pill);border:2px solid var(--sand);background:var(--cream);color:var(--text-mid);font-family:\'Quicksand\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0';
+    c.onclick=()=>openModal(modalBkId);
+    btn.parentNode.insertBefore(c,btn);
+  }
 }
 
 async function saveModalEdit(){
   const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
-  const price=parseInt(document.getElementById('me_price').value)||0;
-  const addonsRaw=document.getElementById('me_addons').value.trim();
+  const price=parseInt(document.getElementById('mv_price').value)||0;
+  const addonsRaw=document.getElementById('mv_addons').value.trim();
   const addons=addonsRaw?addonsRaw.split(',').map(a=>a.trim()).filter(Boolean):[];
   const endVal=document.getElementById('me_end').value;
   await updateBooking(modalBkId,{
-    customerName: document.getElementById('me_name').value.trim(),
-    phone:        document.getElementById('me_phone').value.trim(),
-    date:         document.getElementById('me_date').value,
-    groomerId:    document.getElementById('me_groomer').value,
+    phone:        document.getElementById('mv_phone').value.trim(),
+    date:         document.getElementById('mv_date').value,
+    groomerId:    document.getElementById('mv_groomer').value,
     startTime:    document.getElementById('me_start').value,
-    endTime:      endVal, endTimeMin: endVal, endTimeMax: endVal,
-    service:      document.getElementById('me_service').value.trim(),
+    endTime:endVal,endTimeMin:endVal,endTimeMax:endVal,
+    service:      document.getElementById('mv_service').value.trim(),
     addOns:       addons,
-    weightRange:  document.getElementById('me_weight').value.trim(),
-    estimatedPriceMin: price, estimatedPriceMax: price,
-    notes:        document.getElementById('me_notes').value.trim(),
+    weightRange:  document.getElementById('mv_weight').value.trim(),
+    estimatedPriceMin:price,estimatedPriceMax:price,
+    notes:        document.getElementById('mv_notes').value.trim(),
   });
   showToast('บันทึกเรียบร้อยแล้ว ✓','success');
-  renderCurrentView(); buildAdminStats();
+  renderCurrentView();buildAdminStats();
   openModal(modalBkId);
 }
 
