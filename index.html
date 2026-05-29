@@ -395,6 +395,16 @@ box-shadow:
 .modal-row:last-of-type{border-bottom:none;}
 .modal-row .ml{color:var(--text-mid);flex-shrink:0;font-size:12px;}
 .modal-row .mv{font-family:'Sarabun',sans-serif;font-weight:600;text-align:right;}
+.modal-edit-btn{padding:6px 14px;border-radius:var(--radius-pill);border:2px solid var(--sand);background:var(--cream);color:var(--text-mid);font-family:'Quicksand',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;flex-shrink:0;}
+.modal-edit-btn:hover{border-color:var(--brown);color:var(--brown);}
+.modal-edit-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--sand);font-size:13px;gap:8px;}
+.modal-edit-row .ml{color:var(--text-mid);flex-shrink:0;font-size:12px;min-width:80px;}
+.modal-edit-row input,.modal-edit-row select{flex:1;padding:5px 10px;border:2px solid var(--sand);border-radius:10px;font-family:'Mitr',sans-serif;font-size:13px;color:var(--text-dark);background:var(--white);outline:none;text-align:right;min-width:0;}
+.modal-edit-row input:focus,.modal-edit-row select:focus{border-color:var(--brown);}
+.modal-save-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.modal-save-btn{padding:11px;border-radius:var(--radius-pill);font-family:'Quicksand',sans-serif;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .18s;}
+.modal-save-btn.save{background:var(--brown);color:#fff;}
+.modal-save-btn.cancel{background:var(--cream);color:var(--text-mid);border:2px solid var(--sand);}
 .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;}
 .modal-btn{padding:11px 8px;border-radius:14px;font-family:'Mitr',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:all .18s;text-align:center;}
 .modal-btn.call{background:var(--cream);color:var(--text-dark);
@@ -777,7 +787,10 @@ box-shadow:
     <div class="modal-handle"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="modal-title" id="modalTitle">รายละเอียดการจอง</div>
-      <button onclick="closeModal(null)" style="background:var(--cream);border:2px solid var(--sand);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="modal-edit-btn" id="modalEditBtn" onclick="openModalEdit()">✏️ แก้ไข</button>
+        <button onclick="closeModal(null)" style="background:var(--cream);border:2px solid var(--sand);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+      </div>
     </div>
     <div id="modalBody"></div>
     <!-- Status toggle -->
@@ -2478,6 +2491,58 @@ function setStatus(s){
   renderCurrentView();buildAdminStats();
 }
 function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.add('hidden');}
+
+function openModalEdit(){
+  const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
+  const groomerOpts=groomers.map(g=>`<option value="${g.id}"${bk.groomerId===g.id?' selected':''}>${g.name}</option>`).join('');
+  const addonStr=(bk.addOns&&bk.addOns.length)?bk.addOns.join(', '):'';
+  let notesVal='';
+  try{const p=JSON.parse(bk.notes||'');notesVal=(p&&typeof p==='object')?(p.notes||p.remark||p.note||'').toString():bk.notes||'';}catch(e){notesVal=bk.notes||'';}
+  document.getElementById('modalBody').innerHTML=`
+    <div class="modal-edit-row"><span class="ml">ชื่อลูกค้า</span><input id="me_name" value="${(bk.customerName||'').replace(/"/g,'&quot;')}"></div>
+    <div class="modal-edit-row"><span class="ml">เบอร์โทร</span><input id="me_phone" type="tel" value="${bk.phone||''}"></div>
+    <div class="modal-edit-row"><span class="ml">วันที่</span><input id="me_date" type="date" value="${bk.date||''}"></div>
+    <div class="modal-edit-row"><span class="ml">ช่าง</span><select id="me_groomer">${groomerOpts}</select></div>
+    <div class="modal-edit-row"><span class="ml">เวลาเริ่ม</span><input id="me_start" type="time" value="${bk.startTime||''}"></div>
+    <div class="modal-edit-row"><span class="ml">เวลาสิ้นสุด</span><input id="me_end" type="time" value="${bk.endTime||bk.endTimeMax||''}"></div>
+    <div class="modal-edit-row"><span class="ml">บริการ</span><input id="me_service" value="${(bk.service||'').replace(/"/g,'&quot;')}"></div>
+    <div class="modal-edit-row"><span class="ml">บริการเสริม</span><input id="me_addons" placeholder="คั่นด้วยลูกน้ำ" value="${addonStr.replace(/"/g,'&quot;')}"></div>
+    <div class="modal-edit-row"><span class="ml">น้ำหนัก/ขน</span><input id="me_weight" value="${(bk.weightRange||'').replace(/"/g,'&quot;')}"></div>
+    <div class="modal-edit-row"><span class="ml">ราคา (บาท)</span><input id="me_price" type="number" min="0" value="${bk.estimatedPriceMin||0}"></div>
+    <div class="modal-edit-row" style="border:none"><span class="ml">หมายเหตุ</span><input id="me_notes" value="${notesVal.replace(/"/g,'&quot;')}"></div>
+    <div class="modal-save-row">
+      <button class="modal-save-btn save" onclick="saveModalEdit()">✓ บันทึก</button>
+      <button class="modal-save-btn cancel" onclick="openModal(modalBkId)">ยกเลิก</button>
+    </div>`;
+  document.getElementById('statusToggleRow').style.display='none';
+  ['flagRow','historySection'].forEach(id=>{const el=document.getElementById(id);if(el)el.parentElement.style.display='none';});
+  document.querySelectorAll('#modalOverlay .modal-actions, #modalOverlay [style*="ส่งข้อความ LINE"]').forEach(el=>el.style.display='none');
+  document.getElementById('modalEditBtn').style.display='none';
+}
+
+async function saveModalEdit(){
+  const bk=bookings.find(b=>b.id===modalBkId);if(!bk)return;
+  const price=parseInt(document.getElementById('me_price').value)||0;
+  const addonsRaw=document.getElementById('me_addons').value.trim();
+  const addons=addonsRaw?addonsRaw.split(',').map(a=>a.trim()).filter(Boolean):[];
+  const endVal=document.getElementById('me_end').value;
+  await updateBooking(modalBkId,{
+    customerName: document.getElementById('me_name').value.trim(),
+    phone:        document.getElementById('me_phone').value.trim(),
+    date:         document.getElementById('me_date').value,
+    groomerId:    document.getElementById('me_groomer').value,
+    startTime:    document.getElementById('me_start').value,
+    endTime:      endVal, endTimeMin: endVal, endTimeMax: endVal,
+    service:      document.getElementById('me_service').value.trim(),
+    addOns:       addons,
+    weightRange:  document.getElementById('me_weight').value.trim(),
+    estimatedPriceMin: price, estimatedPriceMax: price,
+    notes:        document.getElementById('me_notes').value.trim(),
+  });
+  showToast('บันทึกเรียบร้อยแล้ว ✓','success');
+  renderCurrentView(); buildAdminStats();
+  openModal(modalBkId);
+}
 
 // QUICK BOOKING
 // QUICK BOOKING — multi-pet, fixed 1-hour block
