@@ -2186,7 +2186,11 @@ function showToast(msg,type=''){const t=document.getElementById('toast');t.textC
 async function initAdmin(){
   groomers=loadGroomers();
   const sbGs=await loadGroomersFromSupabase();
-  if(sbGs&&sbGs.length){groomers=sbGs;saveGroomersToStorage(groomers);}
+  if(sbGs&&sbGs.length){
+    const localGs=loadGroomers();
+    groomers=sbGs.map(g=>{const local=localGs.find(l=>l.id===g.id);return{...g,role:local?.role||'groomer'};});
+    saveGroomersToStorage(groomers);
+  }
   await loadBookings();buildAdminStats();renderCurrentView();refreshQbGroomerDropdown();
 }
 if(checkAuth()){initAdmin();}
