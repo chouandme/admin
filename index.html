@@ -598,7 +598,7 @@ body{font-family:'Mitr','Sarabun',sans-serif;background:var(--cream);color:var(-
       </select>
     </div>
     <div class="qb-row"><label>ช่าง</label>
-      <select id="qbGroomer"></select>
+      <select id="qbGroomer" onchange="updateQbServices()"></select>
     </div>
     <div class="qb-row"><label>วันที่</label><input id="qbDate" type="date" onchange="qbCalc()"></div>
     <div class="qb-row"><label>เวลาเริ่ม</label><input id="qbStart" type="time" min="09:00" max="19:00" step="900" onchange="qbCalc()"></div>
@@ -690,10 +690,9 @@ const GROOMER_COLORS=['#A07255','#A0B995','#6A95C0','#E8B84B','#c05050','#ADB6B3
 function loadGroomers(){
   try{
     const raw=localStorage.getItem(GROOMERS_KEY);
-    if(raw){const g=JSON.parse(raw);if(Array.isArray(g)&&g.length)return g;}
+    if(raw){const g=JSON.parse(raw);if(Array.isArray(g)&&g.length)return g.map(x=>({...x,role:x.role||'groomer'}));}
   }catch(e){}
-  // Default 2 groomers
-  return[{id:'groomer1',name:'ช่าง 1'},{id:'groomer2',name:'ช่าง 2'}];
+  return[{id:'groomer1',name:'ช่าง 1',role:'groomer'},{id:'groomer2',name:'ช่าง 2',role:'groomer'}];
 }
 function saveGroomersToStorage(groomers){
   try{localStorage.setItem(GROOMERS_KEY,JSON.stringify(groomers));}catch(e){}
@@ -723,6 +722,11 @@ function getGroomerName(id){
 function getGroomerColor(id){
   const idx=groomers.findIndex(g=>g.id===id);return GROOMER_COLORS[idx%GROOMER_COLORS.length];
 }
+function isAssistant(id){
+  const g=groomers.find(g=>g.id===id);return g?.role==='assistant';
+}
+// Bath-only service list for assistants
+const BATH_SERVICES={dog:['อาบน้ำสุนัข'],cat:['อาบน้ำแมว']};
 
 // Open/close modal
 function openGroomerMgr(){
@@ -752,21 +756,34 @@ function renderGmList(){
       if(gr) gr.name=inp.value.trim()||gr.name;
     });
 
+    const roleBtn=document.createElement('button');
+    const isAsst=g.role==='assistant';
+    roleBtn.textContent=isAsst?'🛁 ผู้ช่วย':'✂️ ช่าง';
+    roleBtn.title='คลิกเพื่อเปลี่ยนบทบาท';
+    roleBtn.style.cssText=`padding:5px 10px;border-radius:var(--radius-pill);border:2px solid ${isAsst?'#6A95C0':'var(--brown)'};background:${isAsst?'#E8F0FB':'var(--cream)'};color:${isAsst?'#1a3a6b':'var(--brown)'};font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+    roleBtn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const gr=groomers.find(x=>x.id===g.id);
+      if(!gr)return;
+      gr.role=gr.role==='assistant'?'groomer':'assistant';
+      renderGmList();
+    });
+
     const delBtn=document.createElement('button');
     delBtn.className='gm-del-btn'; delBtn.title='ลบช่าง'; delBtn.textContent='×';
     delBtn.addEventListener('click',(e)=>{
-      e.stopPropagation(); // prevent modal close
+      e.stopPropagation();
       removeGroomer(g.id);
     });
 
-    row.appendChild(dot); row.appendChild(inp); row.appendChild(delBtn);
+    row.appendChild(dot); row.appendChild(inp); row.appendChild(roleBtn); row.appendChild(delBtn);
     el.appendChild(row);
   });
 }
 
 function addGroomer(){
   const newId='groomer'+Date.now();
-  groomers.push({id:newId,name:'ช่าง '+(groomers.length+1)});
+  groomers.push({id:newId,name:'ช่าง '+(groomers.length+1),role:'groomer'});
   renderGmList();
 }
 
@@ -1683,7 +1700,7 @@ function renderDaily(){
       <div class="drop-ghost" id="ghost-${groomer}"></div>
     </div>`;
   }
-  const colHeaders=groomers.map(g=>`<div class="daily-groomer-header" id="hdr-${g.id}" style="border-top:3px solid ${getGroomerColor(g.id)}">${g.name}</div>`).join('');
+  const colHeaders=groomers.map(g=>`<div class="daily-groomer-header" id="hdr-${g.id}" style="border-top:3px solid ${getGroomerColor(g.id)}">${g.name}${isAssistant(g.id)?'<span style="display:block;font-size:10px;font-weight:500;color:#6A95C0;margin-top:1px">🛁 ผู้ช่วย</span>':''}</div>`).join('');
   const colBodies=groomers.map(g=>{const bks=bookings.filter(b=>b.date===adminDaySelected&&b.status!=='ยกเลิก'&&(b.groomerId===g.id||(!b.groomerId&&g.id===groomers[0].id)));return buildCol(bks,g.id);}).join('');
   document.getElementById('dailyOuter').innerHTML=`
     <div class="daily-header-row">
@@ -2047,11 +2064,26 @@ function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))
 
 // QUICK BOOKING
 const QB_DUR={'bath':60,'bath_clipper':90,'bath_scissor':120};
+function updateQbServices(){
+  const groomerId=document.getElementById('qbGroomer')?.value;
+  const asst=isAssistant(groomerId);
+  const sel=document.getElementById('qbService');
+  if(!sel)return;
+  const cur=sel.value;
+  if(asst){
+    sel.innerHTML='<option value="bath">อาบน้ำ (60 นาที)</option>';
+  }else{
+    sel.innerHTML='<option value="bath">อาบน้ำ (60 นาที)</option><option value="bath_clipper">อาบน้ำ + ตัดขน ปัตตาเลี่ยน (90 นาที)</option><option value="bath_scissor">อาบน้ำ + ตัดขน กรรไกร (120 นาที)</option>';
+    if(cur&&sel.querySelector(`[value="${cur}"]`))sel.value=cur;
+  }
+  qbCalc();
+}
 function openQuickBooking(){
   const today=dateToStr(new Date());
   document.getElementById('qbDate').value=adminDaySelected||today;
   document.getElementById('qbStart').value='09:00';
   document.getElementById('qbErr').classList.remove('visible');
+  updateQbServices();
   qbCalc();document.getElementById('qbOverlay').classList.remove('hidden');
 }
 function closeQB(e){if(e&&e.target!==document.getElementById('qbOverlay'))return;document.getElementById('qbOverlay').classList.add('hidden');}
