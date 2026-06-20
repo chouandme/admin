@@ -2170,9 +2170,14 @@ function closeConfirm(){cancelTargetId=null;document.getElementById('confirmOver
 // DEBUG MODAL
 function openDebugModal(){
   document.getElementById('debugBkCount').textContent=bookings.length+' รายการ';
-  const cols=[{k:'customerName',l:'ลูกค้า'},{k:'petName',l:'น้อง'},{k:'service',l:'บริการ'},{k:'date',l:'วันที่'},{k:'startTime',l:'เริ่ม'},{k:'endTime',l:'สิ้นสุด'},{k:'groomerId',l:'ช่าง'},{k:'status',l:'สถานะ'}];
+  const cols=[{k:'customerName',l:'ลูกค้า'},{k:'petName',l:'น้อง'},{k:'service',l:'บริการ'},{k:'date',l:'วันที่'},{k:'startTime',l:'เริ่ม'},{k:'endTime',l:'สิ้นสุด'},{k:'groomerId',l:'ช่าง'},{k:'status',l:'สถานะ'},{k:'notes',l:'หมายเหตุ'}];
+  function parseNoteText(raw){
+    if(!raw)return'';
+    try{const p=JSON.parse(raw);if(p&&typeof p==='object')return(p.notes||p.remark||p.note||p.special_request||p.comment||'').toString().trim();}catch(e){}
+    return raw;
+  }
   const thead='<tr>'+cols.map(c=>`<th>${c.l}</th>`).join('')+'</tr>';
-  const tbody=bookings.map(b=>`<tr>${cols.map(c=>{let v=b[c.k]??'–';if(c.k==='groomerId')v=v==='groomer2'?'ช่าง 2':'ช่าง 1';if(c.k==='status')v=`<span style="font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700;${b.status==='รอยืนยัน'?'background:#FFF8DC;color:#7a5a00':'background:#E8F5EE;color:#2a5a38'}">${v}</span>`;return`<td>${v}</td>`;}).join('')}</tr>`).join('');
+  const tbody=bookings.map(b=>`<tr>${cols.map(c=>{let v=b[c.k]??'–';if(c.k==='groomerId')v=getGroomerName(v);if(c.k==='status')v=`<span style="font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700;${b.status==='รอยืนยัน'?'background:#FFF8DC;color:#7a5a00':'background:#E8F5EE;color:#2a5a38'}">${v}</span>`;if(c.k==='notes')v=parseNoteText(b.notes)||'–';return`<td>${v}</td>`;}).join('')}</tr>`).join('');
   document.getElementById('debugTableWrap').innerHTML=`<table class="debug-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
   document.getElementById('debugModalOverlay').classList.remove('hidden');
 }
